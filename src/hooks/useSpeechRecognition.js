@@ -1,9 +1,20 @@
 import { useRef, useCallback, useEffect } from 'react'
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-
-// Android Chrome has issues with continuous mode
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+// Request microphone permission explicitly (needed on some Android devices)
+async function ensureMicPermission() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    // Got permission, release the stream immediately
+    stream.getTracks().forEach(t => t.stop())
+    return true
+  } catch (e) {
+    console.error('Mic permission denied:', e)
+    return false
+  }
+}
 
 export function useSpeechRecognition({ onInterim, onFinal, onError }) {
   const recognitionRef = useRef(null)
@@ -11,15 +22,16 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
   const debounceRef = useRef(null)
   const finalTextRef = useRef('')
   const interimTextRef = useRef('')
+  const micPermissionRef = useRef(false)
 
   const createRecognition = useCallback((lang) => {
     if (!SpeechRecognition) {
-      onError?.('SpeechRecognition not supported in this browser')
+      onError?.('not-supported')
       return null
     }
 
     const recognition = new SpeechRecognition()
-    recognition.continuous = !isMobile // disable continuous on mobile
+    recognition.continuous = !isMobile
     recognition.interimResults = true
     recognition.lang = lang
     recognition.maxAlternatives = 1
@@ -46,7 +58,6 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
         finalTextRef.current += final
         onInterim?.(finalTextRef.current)
 
-        // Debounce: wait 500ms after final result before triggering
         clearTimeout(debounceRef.current)
         debounceRef.current = setTimeout(() => {
           if (isListeningRef.current) {
@@ -59,15 +70,17 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
     }
 
     recognition.onerror = (event) => {
+      console.warn('SpeechRecognition error:', event.error)
       if (event.error === 'no-speech' || event.error === 'aborted') return
+      if (event.error === 'not-allowed') {
+        micPermissionRef.current = false
+      }
       onError?.(event.error)
     }
 
     recognition.onend = () => {
-      // On mobile with continuous=false, recognition ends after each phrase
-      // Auto-restart if we're still supposed to be listening
       if (isListeningRef.current) {
-        // If there's accumulated text on mobile, deliver it
+        // Deliver accumulated text on mobile
         if (isMobile && (finalTextRef.current || interimTextRef.current)) {
           const text = finalTextRef.current || interimTextRef.current
           clearTimeout(debounceRef.current)
@@ -79,15 +92,15 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
             }
           }, 300)
         }
-        // Restart recognition
+        // Auto-restart
         try {
           setTimeout(() => {
             if (isListeningRef.current && recognitionRef.current) {
               recognitionRef.current.start()
             }
-          }, 100)
+          }, isMobile ? 200 : 100)
         } catch (e) {
-          // Already started, ignore
+          // ignore
         }
       }
     }
@@ -95,8 +108,19 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
     return recognition
   }, [onInterim, onFinal, onError])
 
-  const start = useCallback((lang = 'zh-CN') => {
+  const start = useCallback(async (lang = 'zh-CN') => {
     stop()
+
+    // On mobile, ensure mic permission first
+    if (!micPermissionRef.current) {
+      const granted = await ensureMicPermission()
+      if (!granted) {
+        onError?.('not-allowed')
+        return
+      }
+      micPermissionRef.current = true
+    }
+
     const recognition = createRecognition(lang)
     if (!recognition) return
 
@@ -108,6 +132,7 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
     try {
       recognition.start()
     } catch (e) {
+      console.error('recognition.start() failed:', e)
       onError?.(e.message)
     }
   }, [createRecognition, onError])
@@ -126,9 +151,7 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
   }, [])
 
   useEffect(() => {
-    return () => {
-      stop()
-    }
+    return () => { stop() }
   }, [stop])
 
   return { start, stop, isSupported: !!SpeechRecognition }

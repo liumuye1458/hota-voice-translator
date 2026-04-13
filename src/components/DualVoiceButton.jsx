@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, useState } from 'react'
 
-const CANCEL_DRAG_THRESHOLD = 60 // px to drag before entering cancel zone
+const CANCEL_DRAG_THRESHOLD = 60
 
 export default function DualVoiceButton({
   leftLabel,
@@ -19,22 +19,20 @@ export default function DualVoiceButton({
   const [showCancelled, setShowCancelled] = useState(false)
   const cancelZoneRef = useRef(false)
 
-  // ===== Cancel flash animation =====
   const triggerCancelFlash = useCallback(() => {
     setShowCancelled(true)
     setTimeout(() => setShowCancelled(false), 600)
   }, [])
 
-  // ===== Perform cancel =====
   const doCancel = useCallback((side) => {
     triggerCancelFlash()
     onCancel(side)
   }, [onCancel, triggerCancelFlash])
 
-  // ===== Mouse handlers =====
-  const handleMouseDown = useCallback((side) => (e) => {
-    if (e.button !== 0) return
-    e.preventDefault()
+  // ===== Pointer handlers (unified mouse + touch) =====
+  const handlePointerDown = useCallback((side) => (e) => {
+    // Only handle primary button (left click / touch)
+    if (e.pointerType === 'mouse' && e.button !== 0) return
     activeRef.current = side
     startPosRef.current = { x: e.clientX, y: e.clientY }
     setInCancelZone(false)
@@ -42,9 +40,9 @@ export default function DualVoiceButton({
     onPressStart(side)
   }, [onPressStart])
 
-  const handleMouseMove = useCallback((e) => {
+  const handlePointerMove = useCallback((e) => {
     if (!activeRef.current) return
-    const dy = startPosRef.current.y - e.clientY // positive = dragged up
+    const dy = startPosRef.current.y - e.clientY
     const inZone = dy > CANCEL_DRAG_THRESHOLD
     if (inZone !== cancelZoneRef.current) {
       cancelZoneRef.current = inZone
@@ -52,7 +50,7 @@ export default function DualVoiceButton({
     }
   }, [])
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     if (!activeRef.current) return
     const side = activeRef.current
     if (cancelZoneRef.current) {
@@ -65,75 +63,55 @@ export default function DualVoiceButton({
     cancelZoneRef.current = false
   }, [onPressEnd, doCancel])
 
-  // ===== Touch handlers =====
-  const handleTouchStart = useCallback((side) => (e) => {
-    // Do NOT call preventDefault() here — it blocks mic permission on Android Chrome
-    const touch = e.touches[0]
-    activeRef.current = side
-    startPosRef.current = { x: touch.clientX, y: touch.clientY }
-    setInCancelZone(false)
-    cancelZoneRef.current = false
-    onPressStart(side)
-  }, [onPressStart])
-
-  const handleTouchMove = useCallback((e) => {
-    if (!activeRef.current) return
-    const touch = e.touches[0]
-    const dy = startPosRef.current.y - touch.clientY
-    const inZone = dy > CANCEL_DRAG_THRESHOLD
-    if (inZone !== cancelZoneRef.current) {
-      cancelZoneRef.current = inZone
-      setInCancelZone(inZone)
+  // Global pointer events
+  useEffect(() => {
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
     }
-  }, [])
+  }, [handlePointerMove, handlePointerUp])
 
-  const handleTouchEnd = useCallback(() => {
-    if (!activeRef.current) return
-    const side = activeRef.current
-    if (cancelZoneRef.current) {
-      doCancel(side)
-    } else {
-      onPressEnd(side)
-    }
-    activeRef.current = null
-    setInCancelZone(false)
-    cancelZoneRef.current = false
-  }, [onPressEnd, doCancel])
-
-  // ===== Keyboard handlers (PC) =====
+  // ===== Keyboard handlers (PC: Shift keys) =====
   useEffect(() => {
     if (isMobile) return
+
+    const isLeftShift = (e) => e.code === 'ShiftLeft' || (e.key === 'Shift' && e.location === 1)
+    const isRightShift = (e) => e.code === 'ShiftRight' || (e.key === 'Shift' && e.location === 2)
+    const isCancelLeft = (e) => e.code === 'KeyZ' || e.key === 'z' || e.key === 'Z'
+    const isCancelRight = (e) => e.code === 'Slash' || e.key === '/' || e.key === '?'
 
     const handleKeyDown = (e) => {
       if (e.repeat) return
 
-      // Start speaking
-      if (e.code === 'ShiftLeft' && !activeRef.current) {
+      if (isLeftShift(e) && !activeRef.current) {
         e.preventDefault()
         activeRef.current = 'left'
         onPressStart('left')
-      } else if (e.code === 'ShiftRight' && !activeRef.current) {
+      } else if (isRightShift(e) && !activeRef.current) {
         e.preventDefault()
         activeRef.current = 'right'
         onPressStart('right')
       }
 
-      // Cancel keys: Z for left, Slash(?) for right
-      if (e.code === 'KeyZ' && activeRef.current === 'left') {
+      // Cancel keys
+      if (isCancelLeft(e) && activeRef.current === 'left') {
         e.preventDefault()
         doCancel('left')
-        // Don't clear activeRef — Shift is still held, user can keep speaking
-      } else if ((e.code === 'Slash' || e.code === 'IntlRo') && activeRef.current === 'right') {
+      } else if (isCancelRight(e) && activeRef.current === 'right') {
         e.preventDefault()
         doCancel('right')
       }
     }
 
     const handleKeyUp = (e) => {
-      if (e.code === 'ShiftLeft' && activeRef.current === 'left') {
+      if (isLeftShift(e) && activeRef.current === 'left') {
         onPressEnd('left')
         activeRef.current = null
-      } else if (e.code === 'ShiftRight' && activeRef.current === 'right') {
+      } else if (isRightShift(e) && activeRef.current === 'right') {
         onPressEnd('right')
         activeRef.current = null
       }
@@ -147,21 +125,6 @@ export default function DualVoiceButton({
     }
   }, [isMobile, onPressStart, onPressEnd, doCancel])
 
-  // Global mouse/touch events
-  useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-    window.addEventListener('touchmove', handleTouchMove, { passive: false })
-    window.addEventListener('touchend', handleTouchEnd)
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-      window.removeEventListener('touchmove', handleTouchMove)
-      window.removeEventListener('touchend', handleTouchEnd)
-    }
-  }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd])
-
-  // Prevent context menu on long press
   const preventMenu = useCallback((e) => e.preventDefault(), [])
 
   const isListening = state === 'listening'
@@ -185,7 +148,6 @@ export default function DualVoiceButton({
 
   return (
     <div className="dual-voice">
-      {/* Cancel zone - appears when dragging up during listening */}
       {isListening && (
         <div className={`cancel-zone ${inCancelZone ? 'cancel-zone--active' : ''}`}>
           <span className="cancel-zone__icon">{inCancelZone ? '✕' : '↑'}</span>
@@ -195,30 +157,26 @@ export default function DualVoiceButton({
         </div>
       )}
 
-      {/* Cancel flash overlay */}
       {showCancelled && (
         <div className="cancel-flash">已取消 / Cancelled</div>
       )}
 
-      {/* Status text */}
       {state !== 'idle' && !showCancelled && (
         <div className="dual-voice__status">{getStatusText()}</div>
       )}
 
-      {/* Interim text preview */}
       {isListening && interimText && !inCancelZone && (
         <div className={`dual-voice__interim ${showCancelled ? 'dual-voice__interim--cancelled' : ''}`}>
           {interimText}
         </div>
       )}
 
-      {/* Buttons */}
       <div className="dual-voice__buttons">
         <button
           className={`dual-btn dual-btn--left ${isLeftActive ? getButtonStateClass(true) : ''} ${showCancelled && activeButton === 'left' ? 'dual-btn--cancel-flash' : ''}`}
-          onMouseDown={handleMouseDown('left')}
-          onTouchStart={handleTouchStart('left')}
+          onPointerDown={handlePointerDown('left')}
           onContextMenu={preventMenu}
+          style={{ touchAction: 'none' }}
           disabled={state !== 'idle' && !isLeftActive}
         >
           <span className="dual-btn__icon">🎤</span>
@@ -227,9 +185,9 @@ export default function DualVoiceButton({
         </button>
         <button
           className={`dual-btn dual-btn--right ${isRightActive ? getButtonStateClass(true) : ''} ${showCancelled && activeButton === 'right' ? 'dual-btn--cancel-flash' : ''}`}
-          onMouseDown={handleMouseDown('right')}
-          onTouchStart={handleTouchStart('right')}
+          onPointerDown={handlePointerDown('right')}
           onContextMenu={preventMenu}
+          style={{ touchAction: 'none' }}
           disabled={state !== 'idle' && !isRightActive}
         >
           <span className="dual-btn__icon">🎤</span>
@@ -238,7 +196,6 @@ export default function DualVoiceButton({
         </button>
       </div>
 
-      {/* Bottom tip */}
       {state === 'idle' && (
         <div className="dual-voice__tip">
           {isMobile ? '按住说话 · 上滑取消' : '按住 Shift 说话 · Z/?取消 · 上滑取消'}
