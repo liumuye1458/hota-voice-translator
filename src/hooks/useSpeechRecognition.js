@@ -3,26 +3,30 @@ import { useRef, useCallback, useEffect } from 'react'
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
-// Request microphone permission explicitly (needed on some Android devices)
-async function ensureMicPermission() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    // Got permission, release the stream immediately
-    stream.getTracks().forEach(t => t.stop())
-    return true
-  } catch (e) {
-    console.error('Mic permission denied:', e)
-    return false
-  }
-}
-
 export function useSpeechRecognition({ onInterim, onFinal, onError }) {
   const recognitionRef = useRef(null)
   const isListeningRef = useRef(false)
   const debounceRef = useRef(null)
   const finalTextRef = useRef('')
   const interimTextRef = useRef('')
-  const micPermissionRef = useRef(false)
+
+  // Request mic permission on first user interaction (async, non-blocking)
+  useEffect(() => {
+    const requestMic = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        stream.getTracks().forEach(t => t.stop())
+      } catch (e) {
+        // Will be handled when recognition starts
+      }
+    }
+    const handler = () => {
+      requestMic()
+      window.removeEventListener('pointerdown', handler)
+    }
+    window.addEventListener('pointerdown', handler, { once: true })
+    return () => window.removeEventListener('pointerdown', handler)
+  }, [])
 
   const createRecognition = useCallback((lang) => {
     if (!SpeechRecognition) {
@@ -72,15 +76,12 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
     recognition.onerror = (event) => {
       console.warn('SpeechRecognition error:', event.error)
       if (event.error === 'no-speech' || event.error === 'aborted') return
-      if (event.error === 'not-allowed') {
-        micPermissionRef.current = false
-      }
       onError?.(event.error)
     }
 
     recognition.onend = () => {
       if (isListeningRef.current) {
-        // Deliver accumulated text on mobile
+        // Deliver accumulated text on mobile when recognition auto-stops
         if (isMobile && (finalTextRef.current || interimTextRef.current)) {
           const text = finalTextRef.current || interimTextRef.current
           clearTimeout(debounceRef.current)
@@ -92,33 +93,30 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
             }
           }, 300)
         }
-        // Auto-restart
-        try {
-          setTimeout(() => {
-            if (isListeningRef.current && recognitionRef.current) {
+        // Auto-restart if still listening
+        setTimeout(() => {
+          if (isListeningRef.current && recognitionRef.current) {
+            try {
               recognitionRef.current.start()
+            } catch (e) {
+              // ignore
             }
-          }, isMobile ? 200 : 100)
-        } catch (e) {
-          // ignore
-        }
+          }
+        }, isMobile ? 200 : 100)
       }
     }
 
     return recognition
   }, [onInterim, onFinal, onError])
 
-  const start = useCallback(async (lang = 'zh-CN') => {
-    stop()
-
-    // On mobile, ensure mic permission first
-    if (!micPermissionRef.current) {
-      const granted = await ensureMicPermission()
-      if (!granted) {
-        onError?.('not-allowed')
-        return
-      }
-      micPermissionRef.current = true
+  // MUST be synchronous — called directly from user gesture (pointerdown)
+  const start = useCallback((lang = 'zh-CN') => {
+    // Stop any existing
+    isListeningRef.current = false
+    clearTimeout(debounceRef.current)
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop() } catch (e) {}
+      recognitionRef.current = null
     }
 
     const recognition = createRecognition(lang)
@@ -141,11 +139,7 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
     isListeningRef.current = false
     clearTimeout(debounceRef.current)
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop()
-      } catch (e) {
-        // Ignore
-      }
+      try { recognitionRef.current.stop() } catch (e) {}
       recognitionRef.current = null
     }
   }, [])
