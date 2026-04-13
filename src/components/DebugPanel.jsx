@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-// Global debug log array — other modules push to this
 const MAX_LOGS = 80
 const logs = []
 const listeners = new Set()
@@ -13,13 +12,13 @@ export function debugLog(tag, msg) {
   listeners.forEach(fn => fn([...logs]))
 }
 
-// Attach to window for easy access from other modules
 if (typeof window !== 'undefined') {
   window.__debugLog = debugLog
 }
 
 export default function DebugPanel() {
   const [visible, setVisible] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const [entries, setEntries] = useState([])
   const scrollRef = useRef(null)
   const tapCount = useRef(0)
@@ -34,9 +33,8 @@ export default function DebugPanel() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [entries])
+  }, [entries, expanded])
 
-  // Triple-tap title bar to toggle debug panel
   const handleTitleTap = useCallback(() => {
     tapCount.current++
     clearTimeout(tapTimer.current)
@@ -47,7 +45,6 @@ export default function DebugPanel() {
     }
   }, [])
 
-  // Expose the toggle trigger globally so StatusBar can use it
   useEffect(() => {
     window.__toggleDebug = () => setVisible(v => !v)
     window.__debugTap = handleTitleTap
@@ -59,51 +56,91 @@ export default function DebugPanel() {
 
   if (!visible) return null
 
+  // Compact mode: thin bar at top showing last log line
+  // Expanded mode: scrollable log overlay (top half, not blocking buttons)
+  if (!expanded) {
+    const lastLine = entries.length > 0 ? entries[entries.length - 1] : 'No logs yet'
+    return (
+      <div
+        onClick={() => setExpanded(true)}
+        style={{
+          position: 'fixed',
+          top: 48,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          background: 'rgba(0,0,0,0.88)',
+          borderBottom: '1px solid #ff6b00',
+          padding: '4px 10px',
+          fontFamily: 'monospace',
+          fontSize: '10px',
+          color: '#0f0',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}
+      >
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastLine}</span>
+        <span style={{ color: '#ff6b00', marginLeft: 8, flexShrink: 0, fontSize: '9px' }}>
+          [{entries.length}] TAP展开
+        </span>
+      </div>
+    )
+  }
+
+  // Expanded: top area, max 35% height, NOT covering bottom buttons
   return (
     <div style={{
       position: 'fixed',
-      bottom: 0,
+      top: 48,
       left: 0,
       right: 0,
-      height: '40dvh',
-      background: 'rgba(0,0,0,0.92)',
+      maxHeight: '35dvh',
       zIndex: 9999,
+      background: 'rgba(0,0,0,0.92)',
+      borderBottom: '2px solid #ff6b00',
       display: 'flex',
       flexDirection: 'column',
-      borderTop: '2px solid #ff6b00',
       fontFamily: 'monospace',
-      fontSize: '11px'
+      fontSize: '10px'
     }}>
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '4px 10px',
+        padding: '3px 10px',
         background: 'rgba(255,107,0,0.15)',
         flexShrink: 0
       }}>
-        <span style={{ color: '#ff6b00', fontWeight: 'bold' }}>DEBUG</span>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <span style={{ color: '#ff6b00', fontWeight: 'bold', fontSize: '10px' }}>DEBUG [{entries.length}]</span>
+        <div style={{ display: 'flex', gap: '6px' }}>
           <button onClick={() => { logs.length = 0; setEntries([]) }} style={{
             background: 'none', border: '1px solid rgba(255,255,255,0.2)',
-            color: '#aaa', borderRadius: '4px', padding: '2px 8px', fontSize: '10px', cursor: 'pointer'
+            color: '#aaa', borderRadius: '3px', padding: '1px 6px', fontSize: '9px', cursor: 'pointer'
           }}>Clear</button>
-          <button onClick={() => setVisible(false)} style={{
+          <button onClick={() => setExpanded(false)} style={{
             background: 'none', border: '1px solid rgba(255,255,255,0.2)',
-            color: '#aaa', borderRadius: '4px', padding: '2px 8px', fontSize: '10px', cursor: 'pointer'
-          }}>Close</button>
+            color: '#aaa', borderRadius: '3px', padding: '1px 6px', fontSize: '9px', cursor: 'pointer'
+          }}>收起</button>
+          <button onClick={() => setVisible(false)} style={{
+            background: 'none', border: '1px solid rgba(255,68,68,0.4)',
+            color: '#f66', borderRadius: '3px', padding: '1px 6px', fontSize: '9px', cursor: 'pointer'
+          }}>关闭</button>
         </div>
       </div>
       <div ref={scrollRef} style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '6px 10px',
+        padding: '4px 10px',
         color: '#0f0',
-        lineHeight: '1.5',
+        lineHeight: '1.4',
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-all'
       }}>
-        {entries.length === 0 && <span style={{ color: '#666' }}>No logs yet. Start using the app to see debug output.</span>}
+        {entries.length === 0 && <span style={{ color: '#666' }}>No logs yet.</span>}
         {entries.map((line, i) => (
           <div key={i} style={{
             color: line.includes('ERROR') ? '#f44' : line.includes('WARN') ? '#fa0' : line.includes('OK') ? '#0f0' : '#8f8'
