@@ -67,7 +67,7 @@ export default function DualVoiceButton({
 
   // ===== Touch handlers =====
   const handleTouchStart = useCallback((side) => (e) => {
-    e.preventDefault()
+    // Do NOT call preventDefault() here — it blocks mic permission on Android Chrome
     const touch = e.touches[0]
     activeRef.current = side
     startPosRef.current = { x: touch.clientX, y: touch.clientY }
