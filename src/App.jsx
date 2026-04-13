@@ -7,6 +7,7 @@ import StatusBar from './components/StatusBar'
 import ConversationView from './components/ConversationView'
 import DualVoiceButton from './components/DualVoiceButton'
 import SettingsPanel from './components/SettingsPanel'
+import DebugPanel, { debugLog } from './components/DebugPanel'
 
 const LS_SETTINGS = 'vt_settings'
 const LS_MESSAGES = 'vt_messages'
@@ -160,24 +161,29 @@ export default function App() {
 
   // Press start: begin listening
   const handlePressStart = useCallback((side) => {
+    debugLog('APP', `handlePressStart(${side}), current state: ${stateRef.current}`)
     if (stateRef.current !== 'idle') return
     activeButtonRef.current = side
     setActiveButton(side)
     updateState('listening')
     // Left = Chinese, Right = target language
     const lang = side === 'left' ? SOURCE_LANG.code : targetLangCode
+    debugLog('APP', `Starting recognition: lang=${lang}`)
     startRecognition(lang)
   }, [startRecognition, updateState, targetLangCode])
 
   // Press end: stop listening, process result
   const handlePressEnd = useCallback((side) => {
+    debugLog('APP', `handlePressEnd(${side}), state: ${stateRef.current}, interimText: "${interimText.substring(0,20)}"`)
     if (stateRef.current !== 'listening') return
     stopRecognition()
     const text = interimText.trim()
     if (text) {
+      debugLog('APP', `Delivering text to translate: "${text.substring(0,30)}"`)
       setInterimText('')
       handleFinal(text)
     } else {
+      debugLog('APP', 'No text captured, back to idle')
       updateState('idle')
       setActiveButton(null)
       activeButtonRef.current = null
@@ -268,6 +274,7 @@ export default function App() {
         onUpdateSettings={updateSettings}
         onClearHistory={handleClearHistory}
       />
+      <DebugPanel />
     </div>
   )
 }

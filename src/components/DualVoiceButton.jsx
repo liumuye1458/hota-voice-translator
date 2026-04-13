@@ -33,6 +33,7 @@ export default function DualVoiceButton({
   const handlePointerDown = useCallback((side) => (e) => {
     // Only handle primary button (left click / touch)
     if (e.pointerType === 'mouse' && e.button !== 0) return
+    if (window.__debugLog) window.__debugLog('BTN', `pointerdown: side=${side}, type=${e.pointerType}, pointerId=${e.pointerId}`)
     activeRef.current = side
     startPosRef.current = { x: e.clientX, y: e.clientY }
     setInCancelZone(false)
