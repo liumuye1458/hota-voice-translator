@@ -9,15 +9,23 @@ export default function DualVoiceButton({
   state,
   isMobile,
   interimText,
+  hasInputText,
   onPressStart,
   onPressEnd,
-  onCancel
+  onCancel,
+  onSendText
 }) {
   const activeRef = useRef(null)
   const startPosRef = useRef({ x: 0, y: 0 })
   const [inCancelZone, setInCancelZone] = useState(false)
   const [showCancelled, setShowCancelled] = useState(false)
   const cancelZoneRef = useRef(false)
+  // Track Left Shift "tap-to-send" mode: armed when shift pressed with input text
+  const leftShiftArmedRef = useRef(false)
+  const leftShiftOtherKeyRef = useRef(false)
+  // Mirror hasInputText in a ref so keydown handler sees the latest value
+  const hasInputTextRef = useRef(hasInputText)
+  useEffect(() => { hasInputTextRef.current = hasInputText }, [hasInputText])
 
   const triggerCancelFlash = useCallback(() => {
     setShowCancelled(true)
@@ -87,14 +95,30 @@ export default function DualVoiceButton({
     const handleKeyDown = (e) => {
       if (e.repeat) return
 
-      if (isLeftShift(e) && !activeRef.current) {
+      if (isLeftShift(e) && !activeRef.current && !leftShiftArmedRef.current) {
+        // If the input box has text, arm "tap to send" instead of starting voice
+        if (hasInputTextRef.current) {
+          leftShiftArmedRef.current = true
+          leftShiftOtherKeyRef.current = false
+          // DO NOT preventDefault — let Shift still work for capitalization
+          return
+        }
         e.preventDefault()
         activeRef.current = 'left'
         onPressStart('left')
-      } else if (isRightShift(e) && !activeRef.current) {
+        return
+      }
+
+      if (isRightShift(e) && !activeRef.current) {
         e.preventDefault()
         activeRef.current = 'right'
         onPressStart('right')
+      }
+
+      // If armed and user presses any other key, treat as Shift-combo (e.g. Shift+A)
+      // and disarm — we won't send on release
+      if (leftShiftArmedRef.current && !isLeftShift(e)) {
+        leftShiftOtherKeyRef.current = true
       }
 
       // Cancel keys
@@ -108,9 +132,22 @@ export default function DualVoiceButton({
     }
 
     const handleKeyUp = (e) => {
-      if (isLeftShift(e) && activeRef.current === 'left') {
-        onPressEnd('left')
-        activeRef.current = null
+      if (isLeftShift(e)) {
+        // Tap-to-send path: armed with no other key pressed = pure tap
+        if (leftShiftArmedRef.current) {
+          const wasPureTap = !leftShiftOtherKeyRef.current
+          leftShiftArmedRef.current = false
+          leftShiftOtherKeyRef.current = false
+          if (wasPureTap && hasInputTextRef.current) {
+            onSendText?.()
+          }
+          return
+        }
+        // Voice path (original behavior)
+        if (activeRef.current === 'left') {
+          onPressEnd('left')
+          activeRef.current = null
+        }
       } else if (isRightShift(e) && activeRef.current === 'right') {
         onPressEnd('right')
         activeRef.current = null
@@ -123,7 +160,7 @@ export default function DualVoiceButton({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [isMobile, onPressStart, onPressEnd, doCancel])
+  }, [isMobile, onPressStart, onPressEnd, doCancel, onSendText])
 
   const preventMenu = useCallback((e) => e.preventDefault(), [])
 
@@ -181,7 +218,7 @@ export default function DualVoiceButton({
         >
           <span className="dual-btn__icon">🎤</span>
           <span className="dual-btn__label">{leftLabel}</span>
-          {!isMobile && <span className="dual-btn__hint">Left Shift · Z取消</span>}
+          {!isMobile && <span className="dual-btn__hint">按住左Shift说话 · 敲Shift发送文本</span>}
         </button>
         <button
           className={`dual-btn dual-btn--right ${isRightActive ? getButtonStateClass(true) : ''} ${showCancelled && activeButton === 'right' ? 'dual-btn--cancel-flash' : ''}`}

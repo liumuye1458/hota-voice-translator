@@ -7,6 +7,7 @@ import StatusBar from './components/StatusBar'
 import ConversationView from './components/ConversationView'
 import DualVoiceButton from './components/DualVoiceButton'
 import SettingsPanel from './components/SettingsPanel'
+import TextInputBar from './components/TextInputBar'
 
 const LS_SETTINGS = 'vt_settings'
 const LS_MESSAGES = 'vt_messages'
@@ -28,6 +29,7 @@ export default function App() {
   const [interimText, setInterimText] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [inputText, setInputText] = useState('')
 
   const isMobile = useMemo(() => isMobileDevice(), [])
   const stateRef = useRef('idle')
@@ -184,6 +186,66 @@ export default function App() {
     }
   }, [stopRecognition, interimText, handleFinal, updateState])
 
+  // Text input send: Chinese → target (used by WeChat voice / keyboard typing)
+  const handleSendText = useCallback(async (explicitText) => {
+    const text = (explicitText ?? inputText).trim()
+    if (!text) return
+    if (stateRef.current === 'listening') {
+      stopRecognition()
+      setInterimText('')
+    }
+    if (stateRef.current === 'speaking') {
+      cancelSpeech()
+    }
+
+    // Clear input immediately so next voice-dictation can start fresh
+    setInputText('')
+
+    // Lock into Chinese → target flow
+    activeButtonRef.current = 'left'
+    setActiveButton('left')
+    updateState('translating')
+
+    const sourceLangName = getLangName(SOURCE_LANG.code)
+    const targetLangName = getLangName(targetLangCode)
+
+    try {
+      const translation = await translate(text, sourceLangName, targetLangName)
+      if (!translation) {
+        updateState('idle')
+        setActiveButton(null)
+        activeButtonRef.current = null
+        return
+      }
+      const msg = {
+        id: ++idCounter.current,
+        timestamp: Date.now(),
+        originalText: text,
+        translatedText: translation,
+        fromLang: 'zh',
+        toLang: targetLangCode
+      }
+      setMessages(prev => [...prev, msg])
+      if (settings.autoPlay !== false) {
+        updateState('speaking')
+        speak(translation)
+      } else {
+        updateState('idle')
+        setActiveButton(null)
+        activeButtonRef.current = null
+      }
+    } catch (err) {
+      console.error('Translation error:', err)
+      showError(err.message || '翻译出错 / Translation error')
+      updateState('error')
+      setActiveButton(null)
+      activeButtonRef.current = null
+      setTimeout(() => {
+        if (stateRef.current === 'error') updateState('idle')
+      }, 3000)
+    }
+  }, [inputText, translate, speak, cancelSpeech, stopRecognition, updateState, showError, targetLangCode, settings])
+
   // Cancel: stop listening, clear interim, restart recognition (Shift still held)
   const handleCancel = useCallback((side) => {
     if (stateRef.current !== 'listening') return
@@ -250,6 +312,12 @@ export default function App() {
         onReplay={handleReplay}
         onDeleteMessage={handleDeleteMessage}
       />
+      <TextInputBar
+        value={inputText}
+        onChange={setInputText}
+        onSend={(text) => handleSendText(text)}
+        disabled={state !== 'idle' && state !== 'listening'}
+      />
       <DualVoiceButton
         leftLabel={`${SOURCE_LANG.flag} ${SOURCE_LANG.name}`}
         rightLabel={`${targetLang.flag} ${targetLang.name}`}
@@ -257,9 +325,11 @@ export default function App() {
         state={state}
         isMobile={isMobile}
         interimText={interimText}
+        hasInputText={inputText.trim().length > 0}
         onPressStart={handlePressStart}
         onPressEnd={handlePressEnd}
         onCancel={handleCancel}
+        onSendText={() => handleSendText()}
       />
       <SettingsPanel
         isOpen={settingsOpen}
