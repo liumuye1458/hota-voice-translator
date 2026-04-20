@@ -4,63 +4,79 @@ import { synthesizeSpeech } from '../services/openai'
 export function useSpeechSynthesis({ onEnd, onError, apiKey, voice }) {
   const audioRef = useRef(null)
   const urlRef = useRef(null)
+  // Session ID guards against stale callbacks from old speak() calls
+  const sessionIdRef = useRef(0)
 
-  const speak = useCallback(async (text) => {
-    if (!text) return
-
-    // Cancel any current playback
+  const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
-      audioRef.current.pause()
+      audioRef.current.onended = null
+      audioRef.current.onerror = null
+      try { audioRef.current.pause() } catch (e) { /* ignore */ }
       audioRef.current = null
     }
     if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current)
+      try { URL.revokeObjectURL(urlRef.current) } catch (e) { /* ignore */ }
       urlRef.current = null
     }
+  }, [])
 
+  const speak = useCallback(async (text) => {
+    if (!text) {
+      onEnd?.()
+      return
+    }
     if (!apiKey) {
       onEnd?.()
       return
     }
 
-    try {
-      const audioUrl = await synthesizeSpeech(text, voice || 'nova', apiKey)
-      urlRef.current = audioUrl
+    // Each speak call gets a unique session — older in-flight callbacks become no-ops
+    const session = ++sessionIdRef.current
+    cleanupAudio()
 
+    let audioUrl = null
+    try {
+      audioUrl = await synthesizeSpeech(text, voice || 'nova', apiKey)
+      // Superseded while fetching? Drop it.
+      if (session !== sessionIdRef.current) {
+        try { URL.revokeObjectURL(audioUrl) } catch (e) {}
+        return
+      }
+
+      urlRef.current = audioUrl
       const audio = new Audio(audioUrl)
       audioRef.current = audio
 
       audio.onended = () => {
-        audioRef.current = null
-        URL.revokeObjectURL(audioUrl)
-        urlRef.current = null
+        if (session !== sessionIdRef.current) return
+        cleanupAudio()
         onEnd?.()
       }
-
-      audio.onerror = (e) => {
-        audioRef.current = null
-        URL.revokeObjectURL(audioUrl)
-        urlRef.current = null
-        onError?.(e.message || 'Audio playback error')
+      audio.onerror = () => {
+        if (session !== sessionIdRef.current) return
+        cleanupAudio()
+        onError?.('Audio playback error')
       }
 
-      await audio.play()
+      try {
+        await audio.play()
+      } catch (playErr) {
+        if (session !== sessionIdRef.current) return
+        cleanupAudio()
+        onError?.(playErr?.message || 'Audio play rejected (autoplay policy?)')
+      }
     } catch (err) {
-      onError?.(err.message || 'TTS error')
+      if (session !== sessionIdRef.current) return
+      cleanupAudio()
+      onError?.(err?.message || 'TTS error')
     }
-  }, [onEnd, onError, apiKey, voice])
+  }, [onEnd, onError, apiKey, voice, cleanupAudio])
 
   const cancel = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.onended = null
-      audioRef.current = null
-    }
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current)
-      urlRef.current = null
-    }
-  }, [])
+    // Invalidate in-flight callbacks so they can't fire
+    sessionIdRef.current++
+    cleanupAudio()
+  }, [cleanupAudio])
 
   return { speak, cancel }
 }

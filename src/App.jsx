@@ -35,6 +35,8 @@ export default function App() {
   const stateRef = useRef('idle')
   const activeButtonRef = useRef(null)
   const idCounter = useRef(messages.length)
+  // Guards against concurrent send-text invocations (rapid Shift taps)
+  const sendInFlightRef = useRef(false)
 
   // Target language (right button), default Indonesian
   const targetLangCode = settings.targetLang || 'id-ID'
@@ -81,6 +83,7 @@ export default function App() {
     },
     onError: (err) => {
       console.error('TTS error:', err)
+      showError(`语音合成失败 / TTS: ${err}`)
       updateState('idle')
       setActiveButton(null)
       activeButtonRef.current = null
@@ -91,6 +94,8 @@ export default function App() {
   const handleFinal = useCallback(async (text) => {
     if (!text.trim()) return
     if (stateRef.current !== 'listening') return
+    if (sendInFlightRef.current) return
+    sendInFlightRef.current = true
 
     recognitionRef.current?.stop()
     setInterimText('')
@@ -140,6 +145,8 @@ export default function App() {
       setTimeout(() => {
         if (stateRef.current === 'error') updateState('idle')
       }, 3000)
+    } finally {
+      sendInFlightRef.current = false
     }
   }, [translate, speak, updateState, showError, targetLangCode, settings])
 
@@ -190,6 +197,11 @@ export default function App() {
   const handleSendText = useCallback(async (explicitText) => {
     const text = (explicitText ?? inputText).trim()
     if (!text) return
+    // Prevent concurrent sends (e.g. double Shift tap)
+    if (sendInFlightRef.current) return
+    sendInFlightRef.current = true
+
+    // Cancel whatever is going on — voice listening or current audio
     if (stateRef.current === 'listening') {
       stopRecognition()
       setInterimText('')
@@ -243,6 +255,8 @@ export default function App() {
       setTimeout(() => {
         if (stateRef.current === 'error') updateState('idle')
       }, 3000)
+    } finally {
+      sendInFlightRef.current = false
     }
   }, [inputText, translate, speak, cancelSpeech, stopRecognition, updateState, showError, targetLangCode, settings])
 
@@ -316,7 +330,7 @@ export default function App() {
         value={inputText}
         onChange={setInputText}
         onSend={(text) => handleSendText(text)}
-        disabled={state !== 'idle' && state !== 'listening'}
+        disabled={state === 'translating'}
       />
       <DualVoiceButton
         leftLabel={`${SOURCE_LANG.flag} ${SOURCE_LANG.name}`}

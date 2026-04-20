@@ -148,13 +148,8 @@ html, body {
   padding: 12px 16px;
   border-radius: var(--radius-bubble);
   animation: bubble-in 0.25s ease-out;
-  cursor: pointer;
   transition: transform 0.15s;
   position: relative;
-}
-
-.message-bubble:active {
-  transform: scale(0.97);
 }
 
 .message-bubble--zh {
