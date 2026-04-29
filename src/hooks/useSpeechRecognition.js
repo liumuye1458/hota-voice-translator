@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react'
+import { emitRecEvent } from '../components/RecognitionStatus'
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -36,6 +37,13 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
     recognition.lang = lang
     recognition.maxAlternatives = 1
 
+    recognition.onstart = () => emitRecEvent('onstart', lang)
+    recognition.onaudiostart = () => emitRecEvent('audiostart', '')
+    recognition.onspeechstart = () => emitRecEvent('speechstart', '')
+    recognition.onspeechend = () => emitRecEvent('speechend', '')
+    recognition.onaudioend = () => emitRecEvent('audioend', '')
+    recognition.onnomatch = () => emitRecEvent('nomatch', '')
+
     recognition.onresult = (event) => {
       let interim = ''
       let final = ''
@@ -52,10 +60,12 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
       if (interim) {
         interimTextRef.current = interim
         onInterim?.(interim)
+        emitRecEvent('interim', interim.substring(0, 20))
       }
 
       if (final) {
         finalTextRef.current += final
+        emitRecEvent('final', final.substring(0, 20))
         onInterim?.(finalTextRef.current)
 
         clearTimeout(debounceRef.current)
@@ -71,6 +81,7 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
 
     recognition.onerror = (event) => {
       console.warn('SpeechRecognition error:', event.error)
+      emitRecEvent('ERROR', event.error)
       if (event.error === 'no-speech' || event.error === 'aborted') return
       if (event.error === 'not-allowed') {
         micPermissionRef.current = false
@@ -79,6 +90,7 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
     }
 
     recognition.onend = () => {
+      emitRecEvent('onend', isListeningRef.current ? 'still listening' : 'stopped')
       if (isListeningRef.current) {
         // Deliver accumulated text on mobile
         if (isMobile && (finalTextRef.current || interimTextRef.current)) {
@@ -109,6 +121,7 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
   }, [onInterim, onFinal, onError])
 
   const start = useCallback(async (lang = 'zh-CN') => {
+    emitRecEvent('start()', lang)
     stop()
 
     // On mobile, ensure mic permission first
@@ -131,8 +144,10 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
 
     try {
       recognition.start()
+      emitRecEvent('rec.start()', 'called')
     } catch (e) {
       console.error('recognition.start() failed:', e)
+      emitRecEvent('ERROR start()', e.message)
       onError?.(e.message)
     }
   }, [createRecognition, onError])

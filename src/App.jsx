@@ -8,6 +8,7 @@ import ConversationView from './components/ConversationView'
 import DualVoiceButton from './components/DualVoiceButton'
 import SettingsPanel from './components/SettingsPanel'
 import TextInputBar from './components/TextInputBar'
+import RecognitionStatus from './components/RecognitionStatus'
 
 const LS_SETTINGS = 'vt_settings'
 const LS_MESSAGES = 'vt_messages'
@@ -349,6 +350,7 @@ export default function App() {
         onCancel={handleCancel}
         onSendText={() => handleSendText()}
       />
+      <RecognitionStatus />
       <SettingsPanel
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
