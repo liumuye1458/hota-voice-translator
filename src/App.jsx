@@ -30,6 +30,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [inputText, setInputText] = useState('')
+  const [refocusToken, setRefocusToken] = useState(0)
 
   const isMobile = useMemo(() => isMobileDevice(), [])
   const stateRef = useRef('idle')
@@ -80,6 +81,8 @@ export default function App() {
       updateState('idle')
       setActiveButton(null)
       activeButtonRef.current = null
+      // Refocus input so user can resume WeChat dictation
+      setRefocusToken(t => t + 1)
     },
     onError: (err) => {
       console.error('TTS error:', err)
@@ -331,6 +334,7 @@ export default function App() {
         onChange={setInputText}
         onSend={(text) => handleSendText(text)}
         disabled={state === 'translating'}
+        refocusToken={refocusToken}
       />
       <DualVoiceButton
         leftLabel={`${SOURCE_LANG.flag} ${SOURCE_LANG.name}`}

@@ -92,6 +92,16 @@ export default function DualVoiceButton({
     const isCancelLeft = (e) => e.code === 'KeyZ' || e.key === 'z' || e.key === 'Z'
     const isCancelRight = (e) => e.code === 'Slash' || e.key === '/' || e.key === '?'
 
+    // Helper: blur any focused text input so the OS IME (WeChat / Sogou /
+    // Microsoft Pinyin) doesn't intercept Shift as a Chinese/English toggle
+    // and steal keyboard/mic context from speech recognition.
+    const blurFocusedInput = () => {
+      const el = document.activeElement
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+        el.blur()
+      }
+    }
+
     const handleKeyDown = (e) => {
       if (e.repeat) return
 
@@ -103,6 +113,8 @@ export default function DualVoiceButton({
           // DO NOT preventDefault — let Shift still work for capitalization
           return
         }
+        // Voice path: blur input so IME doesn't intercept Shift
+        blurFocusedInput()
         e.preventDefault()
         activeRef.current = 'left'
         onPressStart('left')
@@ -110,6 +122,8 @@ export default function DualVoiceButton({
       }
 
       if (isRightShift(e) && !activeRef.current) {
+        // Voice path: blur input so IME doesn't intercept Shift
+        blurFocusedInput()
         e.preventDefault()
         activeRef.current = 'right'
         onPressStart('right')

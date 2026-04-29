@@ -1,14 +1,22 @@
 import { useEffect, useRef } from 'react'
 
-export default function TextInputBar({ value, onChange, onSend, disabled }) {
+export default function TextInputBar({ value, onChange, onSend, disabled, refocusToken }) {
   const inputRef = useRef(null)
 
-  // Auto-focus on mount and on state recovery
+  // Auto-focus on mount and when re-enabled
   useEffect(() => {
     if (inputRef.current && !disabled) {
       inputRef.current.focus()
     }
   }, [disabled])
+
+  // Re-focus when the parent bumps the token (e.g. after voice ends)
+  // so user can resume WeChat dictation without clicking again.
+  useEffect(() => {
+    if (refocusToken && inputRef.current && !disabled) {
+      inputRef.current.focus()
+    }
+  }, [refocusToken, disabled])
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
