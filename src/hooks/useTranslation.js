@@ -1,7 +1,7 @@
 import { useRef, useCallback } from 'react'
 import { translateText } from '../services/openai'
 
-export function useTranslation(apiKey) {
+export function useTranslation(apiKey, customInstructions = '') {
   const isTranslatingRef = useRef(false)
 
   const translate = useCallback(async (text, sourceLang, targetLang) => {
@@ -12,11 +12,11 @@ export function useTranslation(apiKey) {
       if (!apiKey) {
         return `[未设置API Key] ${text}`
       }
-      return await translateText(text, sourceLang, targetLang, apiKey)
+      return await translateText(text, sourceLang, targetLang, apiKey, customInstructions)
     } finally {
       isTranslatingRef.current = false
     }
-  }, [apiKey])
+  }, [apiKey, customInstructions])
 
   return { translate }
 }

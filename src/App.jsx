@@ -71,8 +71,8 @@ export default function App() {
     setTimeout(() => setErrorMsg(''), 5000)
   }, [])
 
-  // Translation
-  const { translate } = useTranslation(settings.apiKey)
+  // Translation (uses customInstructions from settings for company-specific rules)
+  const { translate } = useTranslation(settings.apiKey, settings.customInstructions || '')
 
   // TTS
   const { speak, cancel: cancelSpeech } = useSpeechSynthesis({

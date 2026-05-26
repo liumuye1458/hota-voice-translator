@@ -80,7 +80,33 @@ export default function SettingsPanel({ isOpen, onClose, settings, onUpdateSetti
           <div className="settings-section">
             <label className="settings-label">翻译引擎 / Engine</label>
             <div className="settings-hint" style={{ fontSize: '13px', color: 'var(--color-success)' }}>
-              GPT-4o（高质量翻译）
+              GPT-4o（高质量翻译）+ tts-1-hd（高清语音）
+            </div>
+          </div>
+
+          {/* Custom Instructions — company-specific translation rules */}
+          <div className="settings-section">
+            <label className="settings-label">
+              自定义指令 / Custom Instructions
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginLeft: 6, fontWeight: 400 }}>
+                （企业沟通规范）
+              </span>
+            </label>
+            <textarea
+              className="settings-input"
+              style={{ minHeight: 110, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5, padding: 10 }}
+              placeholder={`告诉 AI 你公司的沟通规范，例如：
+
+- 我们是直播电商公司，"破价"指降价促销，"福利款"指优惠产品
+- 对员工讲话保持直接，不要软化批评
+- 称呼员工直接用名字，不要加 Bapak/Ibu
+- GMV、ROI、CTR 等数据术语保持英文
+- 不要在句末加 "ya" 这种缓冲词`}
+              value={settings.customInstructions || ''}
+              onChange={e => onUpdateSettings({ customInstructions: e.target.value })}
+            />
+            <div className="settings-hint">
+              这里写的规则优先级最高，会覆盖默认翻译风格。例如可以禁止 AI 美化语气、指定术语翻译等。
             </div>
           </div>
 
