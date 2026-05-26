@@ -105,7 +105,7 @@ export async function synthesizeSpeech(text, voice, apiKey) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'tts-1',
+        model: 'tts-1-hd',
         input: text,
         voice: voice || 'nova',
         response_format: 'mp3'
