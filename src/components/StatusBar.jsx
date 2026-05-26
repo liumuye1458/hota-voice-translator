@@ -1,16 +1,31 @@
-export default function StatusBar({ state, onOpenSettings }) {
+export default function StatusBar({ state, onOpenSettings, onForceReset }) {
+  const stuck = state !== 'idle'
+
   return (
     <div className="status-bar">
       <div className="status-bar__left">
         <div className={`status-bar__dot status-bar__dot--${state}`} />
         <div>
           <div className="status-bar__title">HOTA Voice Translator</div>
-          <div className="status-bar__subtitle">中文 ↔ Bahasa Indonesia</div>
+          <div className="status-bar__subtitle">中文 ↔ Multi-language · Esc 复位</div>
         </div>
       </div>
-      <button className="status-bar__gear" onClick={onOpenSettings}>
-        ⚙
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <button
+          className="status-bar__gear"
+          onClick={onForceReset}
+          title="强制复位 / Force reset (Esc)"
+          style={{
+            color: stuck ? '#ff6b00' : 'rgba(239, 244, 248, 0.5)',
+            fontSize: 18
+          }}
+        >
+          ↺
+        </button>
+        <button className="status-bar__gear" onClick={onOpenSettings} title="设置 / Settings">
+          ⚙
+        </button>
+      </div>
     </div>
   )
 }

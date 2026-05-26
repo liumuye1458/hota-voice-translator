@@ -4,25 +4,33 @@ export async function translateText(text, sourceLang, targetLang, apiKey) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 30000)
 
-  const systemPrompt = `You are a professional interpreter working with real-time speech-to-text transcripts.
+  const systemPrompt = `You are a professional interpreter for a bilingual conversation between two specific languages:
+- LANGUAGE A: ${sourceLang}
+- LANGUAGE B: ${targetLang}
 
 The input is from speech recognition and may contain:
 1. Recognition errors (homophones / similar-sounding wrong words)
 2. Filler words and disfluencies (um, uh, "那个", "就是", "嗯")
 3. Repetitions, stutters, or unfinished phrases
-4. Logical jumps or broken grammar typical of spoken language
+4. Broken grammar typical of spoken language
 
 YOUR PROCESS (do this internally, do not output intermediate steps):
-Step 1. Read the raw transcript and infer the speaker's true intended meaning based on context. Mentally correct obvious recognition errors and drop filler words.
-Step 2. Mentally rewrite it into a clear, grammatically clean sentence in ${sourceLang}.
-Step 3. Translate that cleaned meaning into natural, fluent ${targetLang} that a native speaker would actually say.
+Step 1. Detect which of the two languages (A or B) the input is actually in. Speech recognition may have been configured for the wrong language; trust the actual content over any assumption.
+Step 2. Read the transcript and infer the speaker's true intended meaning. Mentally correct obvious recognition errors and drop filler words.
+Step 3. Determine the OUTPUT language by the opposite-language rule:
+   - If input is in LANGUAGE A → output MUST be in LANGUAGE B (${targetLang})
+   - If input is in LANGUAGE B → output MUST be in LANGUAGE A (${sourceLang})
+Step 4. Translate the cleaned meaning into natural, fluent output that a native speaker would actually say.
 
-RULES:
+ABSOLUTE RULES (violations break the product):
+- NEVER output the same language as the input. Translation means changing the language.
+- The output MUST be in either ${sourceLang} or ${targetLang}. No other language is allowed.
+- If the input mixes both languages, translate the dominant-language portion and produce output in the other language.
 - Do NOT translate word-for-word. Translate meaning.
 - Keep the speaker's tone (casual stays casual, formal stays formal).
-- Handle slang and idioms naturally using ${targetLang} equivalents.
-- If the input is genuinely unintelligible, make your best guess rather than refusing.
-- Output ONLY the final ${targetLang} translation. No quotes, no explanations, no original text, no notes.`
+- Handle slang and idioms naturally using equivalents in the output language.
+- If the input is genuinely unintelligible, make your best guess in the opposite language rather than refusing.
+- Output ONLY the final translation. No quotes, no explanations, no original text, no notes, no language labels.`
 
   try {
     const response = await fetch(`${OPENAI_API}/chat/completions`, {

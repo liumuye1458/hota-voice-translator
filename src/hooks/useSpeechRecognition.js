@@ -17,6 +17,8 @@ async function ensureMicPermission() {
   }
 }
 
+const MAX_RESTARTS = 30 // ~30 short sessions ~= 5-10 minutes total
+
 export function useSpeechRecognition({ onInterim, onFinal, onError }) {
   const recognitionRef = useRef(null)
   const isListeningRef = useRef(false)
@@ -24,6 +26,7 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
   const finalTextRef = useRef('')
   const interimTextRef = useRef('')
   const micPermissionRef = useRef(false)
+  const restartCountRef = useRef(0)
 
   const createRecognition = useCallback((lang) => {
     if (!SpeechRecognition) {
@@ -104,7 +107,15 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
             }
           }, 300)
         }
-        // Auto-restart
+        // Auto-restart — but cap restart count to prevent runaway loops if
+        // keyup was lost or recognition keeps failing immediately.
+        restartCountRef.current += 1
+        if (restartCountRef.current > MAX_RESTARTS) {
+          emitRecEvent('ERROR restart-cap', `${restartCountRef.current}/${MAX_RESTARTS}`)
+          isListeningRef.current = false
+          onError?.('restart-loop')
+          return
+        }
         try {
           setTimeout(() => {
             if (isListeningRef.current && recognitionRef.current) {
@@ -141,6 +152,7 @@ export function useSpeechRecognition({ onInterim, onFinal, onError }) {
     isListeningRef.current = true
     finalTextRef.current = ''
     interimTextRef.current = ''
+    restartCountRef.current = 0
 
     try {
       recognition.start()

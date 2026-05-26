@@ -269,11 +269,61 @@ export default function App() {
     if (stateRef.current !== 'listening') return
     stopRecognition()
     setInterimText('')
-    // Restart recognition — user's Shift is still held (PC) or they can press again (mobile)
     updateState('idle')
     setActiveButton(null)
     activeButtonRef.current = null
   }, [stopRecognition, updateState])
+
+  // ===== Force reset: nuclear option to clean ALL state =====
+  // Called on Escape, window blur, listening timeout, or manual reset button.
+  // This is the single source of truth for "make everything idle again".
+  const forceReset = useCallback(() => {
+    try { stopRecognition() } catch (e) {}
+    try { cancelSpeech() } catch (e) {}
+    sendInFlightRef.current = false
+    activeButtonRef.current = null
+    setActiveButton(null)
+    setInterimText('')
+    stateRef.current = 'idle'
+    setState('idle')
+  }, [stopRecognition, cancelSpeech])
+
+  // Recovery hook 1: window loses focus (alt-tab, click another app)
+  // Keyup event for held Shift might never arrive — force reset to avoid stuck listening.
+  useEffect(() => {
+    const onBlur = () => {
+      if (stateRef.current === 'listening') {
+        forceReset()
+      }
+    }
+    window.addEventListener('blur', onBlur)
+    return () => window.removeEventListener('blur', onBlur)
+  }, [forceReset])
+
+  // Recovery hook 2: Escape key = emergency reset from any state
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape' && stateRef.current !== 'idle') {
+        forceReset()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [forceReset])
+
+  // Recovery hook 3: listening state must not exceed 20 seconds
+  // If user releases Shift but keyup is lost (IME swallow, focus loss, etc.),
+  // auto-restart would keep recognition running forever. Cap it hard.
+  useEffect(() => {
+    if (state !== 'listening') return
+    const timeoutId = setTimeout(() => {
+      if (stateRef.current === 'listening') {
+        console.warn('Listening timeout (20s) — forcing reset')
+        forceReset()
+      }
+    }, 20000)
+    return () => clearTimeout(timeoutId)
+  }, [state, forceReset])
 
   // Replay a message
   const handleReplay = useCallback((message) => {
@@ -316,7 +366,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <StatusBar state={state} onOpenSettings={() => setSettingsOpen(true)} />
+      <StatusBar state={state} onOpenSettings={() => setSettingsOpen(true)} onForceReset={forceReset} />
       {!settings.apiKey && (
         <div className="error-banner" style={{ background: 'rgba(255,165,0,0.15)', borderColor: 'rgba(255,165,0,0.3)', color: '#ffaa44', cursor: 'pointer' }} onClick={() => setSettingsOpen(true)}>
           请设置 API Key / Set API Key in Settings ⚙
