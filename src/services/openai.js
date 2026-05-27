@@ -1,61 +1,37 @@
 const OPENAI_API = 'https://api.openai.com/v1'
 
-export async function translateText(text, sourceLang, targetLang, apiKey, customInstructions = '') {
+// Heuristic check: roughly detect if text is "Chinese-dominant" or "non-Chinese-dominant"
+function isChineseDominant(text) {
+  if (!text) return false
+  const chineseChars = (text.match(/[一-鿿]/g) || []).length
+  const totalChars = text.replace(/\s/g, '').length || 1
+  return chineseChars / totalChars > 0.3
+}
+
+// Single direct call to GPT-4o for translation
+async function callTranslateOnce(text, sourceLang, targetLang, apiKey, customInstructions, attempt) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 30000)
 
-  const systemPrompt = `You are a workplace interpreter for DIRECT business communication between a Chinese manager and Indonesian staff (or vice versa). This is an operational tool, NOT a diplomatic translator.
+  // SHORT, BLUNT prompt. No decorations, no multi-section structure.
+  // GPT-4o follows short directive prompts more reliably than elaborate ones.
+  let systemPrompt = `Translate the user's message from ${sourceLang} to ${targetLang}.
 
-LANGUAGES:
-- LANGUAGE A: ${sourceLang}
-- LANGUAGE B: ${targetLang}
+Rules:
+- Output MUST be in ${targetLang}. Do not output ${sourceLang}. Do not output English unless ${targetLang} IS English.
+- The input is a speech-to-text transcript; silently drop filler words ("嗯", "那个", "就是", "uh") and fix obvious mis-recognitions.
+- Preserve the speaker's tone exactly. Do not soften criticism. Do not add politeness words that weren't in the original.
+- Do not pad. Brief input → brief output.
+- Output ONLY the translation. No quotes, no explanation, no labels.`
 
-═══════════════════════════════════════════════
-CORE PRINCIPLE: FIDELITY OVER POLITENESS
-═══════════════════════════════════════════════
-Your job is to deliver what the speaker MEANT — including their tone, urgency, and emotional weight — NOT to make them sound more polished or polite than they are. The listener must receive the speaker's TRUE message.
+  if (customInstructions && customInstructions.trim()) {
+    systemPrompt += `\n\nAdditional rules from user (highest priority):\n${customInstructions.trim()}`
+  }
 
-YOUR PROCESS (internal, do not output steps):
-Step 1. Detect the input's actual language (A or B). Trust the content over any assumption.
-Step 2. Understand the speaker's full intent: literal meaning + emotional register + urgency + severity.
-Step 3. Process out only what is NOT the speaker's intent:
-   - Speech-to-text errors (homophones, mis-recognitions — infer from context)
-   - Filler words / disfluencies ("嗯", "那个", "就是", "uh", "um")
-   - Stutters and false starts
-Step 4. Output in the OPPOSITE language with full fidelity.
-
-═══════════════════════════════════════════════
-FIDELITY RULES (do not violate)
-═══════════════════════════════════════════════
-1. DO NOT soften criticism. Stern → stern. Angry → angry. Severe → severe.
-2. DO NOT add courtesy filler that wasn't in the original ("please", "kindly", "ya", "mohon", "请", "麻烦").
-3. DO NOT make the speaker sound more formal or polite than they are.
-4. DO NOT add information not present in the original.
-5. DO NOT remove emotional weight. If the speaker is excited / urgent / disappointed, the output must convey the same.
-6. DO NOT pad or elaborate. If the speaker said 5 words, you say roughly 5 words. Brief stays brief.
-7. DO match the directness: blunt → blunt; gentle → gentle; sarcastic → sarcastic.
-
-═══════════════════════════════════════════════
-WHAT TO PRESERVE EXACTLY
-═══════════════════════════════════════════════
-- Register: casual vs formal — match exactly.
-- Praise warmth: heartfelt praise stays warm; perfunctory acknowledgement stays brief.
-- Criticism force: firm reminder stays firm; severe rebuke stays severe.
-- Urgency: urgent matters sound urgent.
-- Directives: commands stay commands, not suggestions.
-
-═══════════════════════════════════════════════
-HARD CONSTRAINTS
-═══════════════════════════════════════════════
-- NEVER output the same language as the input.
-- Output MUST be in either ${sourceLang} or ${targetLang}. No other language.
-- If input is unintelligible, make your best guess in the opposite language; never refuse.
-- Output ONLY the final translation. No quotes, no explanations, no labels.${customInstructions ? `
-
-═══════════════════════════════════════════════
-CUSTOM INSTRUCTIONS FROM USER (highest priority — apply above all default rules where they conflict)
-═══════════════════════════════════════════════
-${customInstructions}` : ''}`
+  // On retry, make the language constraint even more emphatic
+  if (attempt > 0) {
+    systemPrompt = `THE OUTPUT MUST BE WRITTEN IN ${targetLang.toUpperCase()}. NOT ENGLISH. NOT ${sourceLang.toUpperCase()}. ONLY ${targetLang.toUpperCase()}.\n\n` + systemPrompt
+  }
 
   try {
     const response = await fetch(`${OPENAI_API}/chat/completions`, {
@@ -66,7 +42,7 @@ ${customInstructions}` : ''}`
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        temperature: 0.3,
+        temperature: 0,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: text }
@@ -85,6 +61,37 @@ ${customInstructions}` : ''}`
   } finally {
     clearTimeout(timeout)
   }
+}
+
+export async function translateText(text, sourceLang, targetLang, apiKey, customInstructions = '') {
+  // First attempt
+  let result = await callTranslateOnce(text, sourceLang, targetLang, apiKey, customInstructions, 0)
+
+  // Sanity check: detect output-language mismatch
+  // If we're going Chinese → non-Chinese, result should NOT be Chinese-dominant
+  // If we're going non-Chinese → Chinese, result SHOULD be Chinese-dominant
+  const sourceIsChinese = sourceLang.toLowerCase().includes('chinese')
+  const targetIsChinese = targetLang.toLowerCase().includes('chinese')
+  const resultIsChinese = isChineseDominant(result)
+
+  let wrongLanguage = false
+  if (targetIsChinese && !resultIsChinese) wrongLanguage = true
+  if (!targetIsChinese && resultIsChinese) wrongLanguage = true
+  // Heuristic for English-leak when target is Indonesian/Vietnamese/etc:
+  // if target is NOT English and NOT Chinese, and result has no Chinese chars
+  // but has lots of common English-only words, it's probably English.
+  if (!targetIsChinese && !targetLang.toLowerCase().includes('english')) {
+    const englishWordHits = (result.match(/\b(the|and|is|are|will|please|tomorrow|product|live|stream)\b/gi) || []).length
+    const wordCount = result.split(/\s+/).length || 1
+    if (englishWordHits / wordCount > 0.3) wrongLanguage = true
+  }
+
+  if (wrongLanguage) {
+    console.warn('[translateText] Output language mismatch, retrying:', result)
+    result = await callTranslateOnce(text, sourceLang, targetLang, apiKey, customInstructions, 1)
+  }
+
+  return result
 }
 
 export async function transcribeAudio(audioBlob, lang, apiKey) {
