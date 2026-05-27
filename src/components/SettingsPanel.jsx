@@ -143,8 +143,27 @@ export default function SettingsPanel({ isOpen, onClose, settings, onUpdateSetti
           {/* Clear History */}
           <div className="settings-section">
             <button className="settings-btn-danger" onClick={handleClear}>
-              清空对话 / Clear History
+              清空对话历史 / Clear History
             </button>
+          </div>
+
+          {/* Reset everything — nuclear option for corrupt state */}
+          <div className="settings-section">
+            <button
+              className="settings-btn-danger"
+              style={{ background: 'rgba(255,140,0,0.1)', borderColor: 'rgba(255,140,0,0.3)', color: '#ff9933' }}
+              onClick={() => {
+                if (confirm('确定重置所有设置并清空数据？\n（API Key、目标语言、自定义指令、对话历史全部清除）\nReset EVERYTHING?')) {
+                  localStorage.clear()
+                  location.reload()
+                }
+              }}
+            >
+              ⚠ 重置所有数据 / Reset Everything (Nuclear)
+            </button>
+            <div className="settings-hint" style={{ fontSize: 11 }}>
+              清除 API Key、目标语言、自定义指令、对话历史，并重新加载页面。卡死时的逃生通道。
+            </div>
           </div>
 
         </div>

@@ -366,7 +366,12 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <StatusBar state={state} onOpenSettings={() => setSettingsOpen(true)} onForceReset={forceReset} />
+      <StatusBar
+        state={state}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onForceReset={forceReset}
+        targetLangLabel={`${targetLang.flag} ${targetLang.nameZh}`}
+      />
       {!settings.apiKey && (
         <div className="error-banner" style={{ background: 'rgba(255,165,0,0.15)', borderColor: 'rgba(255,165,0,0.3)', color: '#ffaa44', cursor: 'pointer' }} onClick={() => setSettingsOpen(true)}>
           请设置 API Key / Set API Key in Settings ⚙
