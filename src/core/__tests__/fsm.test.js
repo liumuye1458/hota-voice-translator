@@ -213,3 +213,150 @@ test('Sessions are mutually exclusive: creating new cancels old', () => {
   assert.equal(sm.isCurrent(a), false)
   assert.equal(sm.isCurrent(b), true)
 })
+
+// ============================================================
+// Codex-requested gap coverage tests (10 from review round 1)
+// ============================================================
+
+test('CODEX #1: START during SPEAKING cancels old session', () => {
+  // Old session reaches SPEAKING
+  const sessionA = makeSession()
+  let s = reducer(initialState, { type: 'START', session: sessionA, inputMode: 'text' })
+  const { attemptId: tlA } = sessionA.newTranslateAttempt()
+  s = reducer(s, {
+    type: 'TRANSLATION_READY',
+    sessionId: sessionA.id,
+    translateAttemptId: tlA,
+    text: 'first translation',
+    chunkCount: 5
+  })
+  assert.equal(s.status, STATES.SPEAKING)
+
+  // User presses again — new session starts
+  const sessionB = makeSession()
+  s = reducer(s, { type: 'START', session: sessionB, inputMode: 'text' })
+  assert.equal(s.status, STATES.TRANSLATING)
+  assert.equal(s.session.id, sessionB.id)
+  assert.notEqual(s.session.id, sessionA.id)
+
+  // Old session's lingering SPEAK_DONE must NOT affect state
+  s = reducer(s, { type: 'SPEAK_DONE', sessionId: sessionA.id, ttsQueueId: 0 })
+  assert.equal(s.status, STATES.TRANSLATING, 'old SPEAK_DONE must be ignored')
+  assert.equal(s.session.id, sessionB.id)
+})
+
+test('CODEX #2: RESET mid-fetch drops late translation result', () => {
+  const session = makeSession()
+  let s = reducer(initialState, { type: 'START', session, inputMode: 'text' })
+  const { attemptId } = session.newTranslateAttempt()
+
+  // Simulate user hitting Esc → RESET fires before translation returns
+  s = reducer(s, { type: 'RESET', reason: 'user' })
+  assert.equal(s.status, STATES.IDLE)
+  assert.equal(s.session, null)
+
+  // Late translation result arrives — must be dropped (no session in state)
+  s = reducer(s, {
+    type: 'TRANSLATION_READY',
+    sessionId: session.id,
+    translateAttemptId: attemptId,
+    text: 'late result',
+    chunkCount: 1
+  })
+  assert.equal(s.status, STATES.IDLE)
+  const last = s.lastEventLog[s.lastEventLog.length - 1]
+  assert.equal(last.accepted, false, 'late TRANSLATION_READY after RESET must be rejected')
+})
+
+test('CODEX #3: Error auto-recovers via RECOVER event (3s timer in app)', () => {
+  const session = makeSession()
+  let s = reducer(initialState, { type: 'START', session, inputMode: 'voice' })
+  s = reducer(s, { type: 'ERROR', sessionId: session.id, code: 'transcribe-fail', message: 'x' })
+  assert.equal(s.status, STATES.ERROR)
+  assert.notEqual(s.lastError, null)
+
+  // App schedules a RECOVER 3s later
+  s = reducer(s, { type: 'RECOVER' })
+  assert.equal(s.status, STATES.IDLE)
+  assert.equal(s.lastError, null)
+})
+
+test('CODEX #4: Rapid left/right alternation — no direction leak', () => {
+  // 10 rapid presses alternating left/right
+  let s = initialState
+  let lastSession = null
+  for (let i = 0; i < 10; i++) {
+    const side = i % 2 === 0 ? 'left' : 'right'
+    const dir = side === 'left' ? 'zh→id' : 'id→zh'
+    const session = makeSession({ direction: dir })
+    s = reducer(s, { type: 'START', session, side, inputMode: 'voice' })
+    assert.equal(s.session.direction, dir, `iter ${i}: direction must match side`)
+    lastSession = session
+  }
+  // Final state direction matches the LAST press, not any earlier
+  assert.equal(s.session.id, lastSession.id)
+  assert.equal(s.session.direction, lastSession.direction)
+})
+
+test('CODEX #9: Failed TTS chunk does NOT stop the queue', () => {
+  const session = makeSession()
+  let s = reducer(initialState, { type: 'START', session, inputMode: 'text' })
+  const { attemptId: tlId } = session.newTranslateAttempt()
+  s = reducer(s, {
+    type: 'TRANSLATION_READY',
+    sessionId: session.id,
+    translateAttemptId: tlId,
+    text: 'long text',
+    chunkCount: 5
+  })
+  assert.equal(s.status, STATES.SPEAKING)
+
+  const { ttsQueueId } = session.newTtsQueue()
+  // Chunk 2 of 5 fails
+  s = reducer(s, {
+    type: 'CHUNK_FAILED',
+    sessionId: session.id,
+    ttsQueueId,
+    chunkIndex: 1,
+    code: 'tts-net'
+  })
+  // State must NOT have left SPEAKING
+  assert.equal(s.status, STATES.SPEAKING, 'CHUNK_FAILED must not exit speaking state')
+  assert.equal(s.errorBurst.length > 0, true, 'error recorded')
+
+  // SPEAK_DONE still terminates the queue cleanly
+  s = reducer(s, { type: 'SPEAK_DONE', sessionId: session.id, ttsQueueId })
+  assert.equal(s.status, STATES.IDLE)
+})
+
+test('CODEX #10: EMPTY_INPUT — STOP with no captured speech does not enter translate flow', () => {
+  const session = makeSession()
+  let s = reducer(initialState, { type: 'START', session, inputMode: 'voice' })
+  // STOP arrives but no nextPhase (no speech captured)
+  s = reducer(s, { type: 'STOP', sessionId: session.id })
+  // Note: STOP with no nextPhase → idle + session cleared (handled by hook)
+  // or alternatively, EMPTY_INPUT is dispatched
+  s = reducer(s, { type: 'EMPTY_INPUT', sessionId: session.id })
+  assert.equal(s.status, STATES.IDLE)
+  assert.equal(s.session, null)
+  // Hook would not have called any API → verified by integration test
+})
+
+test('Forensics: lastEventLog tracks all events including rejected ones', () => {
+  const session = makeSession()
+  let s = reducer(initialState, { type: 'START', session, inputMode: 'voice' })
+
+  // Inject a stale event
+  s = reducer(s, {
+    type: 'TRANSCRIPT_READY',
+    sessionId: 'fake-session-id',
+    transcribeAttemptId: 1,
+    text: 'stale'
+  })
+
+  const events = s.lastEventLog
+  assert.equal(events.length >= 2, true)
+  const staleEntry = events[events.length - 1]
+  assert.equal(staleEntry.type, 'TRANSCRIPT_READY')
+  assert.equal(staleEntry.accepted, false)
+})

@@ -1,0 +1,178 @@
+{
+  "version": "1.0",
+  "description": "Golden translation cases for HOTA Voice Translator v2.0. Each case is a triplet (input, must_contain, must_not_contain) used to detect quality regressions across prompt or model changes.",
+  "cases": [
+    {
+      "id": "biz-direct-001",
+      "direction": "zh→id",
+      "input": "明天直播 8 点开始，把产品链接提前给我准备好",
+      "must_contain": ["8", "link", "produk"],
+      "must_not_contain": ["please ", "kindly", "mohon"],
+      "register": "direct",
+      "notes": "Manager giving operational instruction. Should not be padded with politeness."
+    },
+    {
+      "id": "biz-direct-002",
+      "direction": "zh→id",
+      "input": "把今天的 GMV 报告发我",
+      "must_contain": ["GMV", "report"],
+      "must_not_contain": ["please ", "kindly"],
+      "register": "direct"
+    },
+    {
+      "id": "biz-direct-003",
+      "direction": "zh→id",
+      "input": "客户问能不能加单 50 个",
+      "must_contain": ["50"],
+      "must_not_contain": [],
+      "register": "direct"
+    },
+    {
+      "id": "biz-direct-004",
+      "direction": "id→zh",
+      "input": "Bos, hari ini stok produk A sudah habis",
+      "must_contain": ["产品", "卖完", "缺货", "完了"],
+      "must_not_contain": ["please", "mohon"],
+      "register": "direct",
+      "notes": "must_contain is OR — any one of these word stems is acceptable"
+    },
+    {
+      "id": "stern-001",
+      "direction": "zh→id",
+      "input": "你昨天又迟到了，这事不能再发生",
+      "must_contain": ["telat", "kemarin"],
+      "must_not_contain": ["mohon", "tolong", "ya."],
+      "register": "stern",
+      "notes": "Criticism must NOT be softened with mohon/tolong/ya"
+    },
+    {
+      "id": "stern-002",
+      "direction": "zh→id",
+      "input": "这个数据不对，重新算一遍",
+      "must_contain": ["hitung", "data"],
+      "must_not_contain": ["mohon ", "silakan"],
+      "register": "stern"
+    },
+    {
+      "id": "stern-003",
+      "direction": "zh→id",
+      "input": "为什么没人通知我直播间被举报了？",
+      "must_contain": ["lapor", "kenapa"],
+      "must_not_contain": ["mohon", "silakan"],
+      "register": "stern"
+    },
+    {
+      "id": "stern-004",
+      "direction": "id→zh",
+      "input": "Saya tidak setuju dengan keputusan ini",
+      "must_contain": ["不同意", "反对"],
+      "must_not_contain": [],
+      "register": "stern"
+    },
+    {
+      "id": "num-001",
+      "direction": "zh→id",
+      "input": "目标 GMV 是 50 juta，今天完成 35 juta",
+      "must_contain": ["50", "35", "GMV", "juta"],
+      "must_not_contain": [],
+      "register": "technical",
+      "notes": "Numbers must survive translation intact"
+    },
+    {
+      "id": "num-002",
+      "direction": "zh→id",
+      "input": "ROI 1.8，转化率 3.5%，退款率 0.7%",
+      "must_contain": ["1.8", "3.5", "0.7"],
+      "must_not_contain": [],
+      "register": "technical",
+      "notes": "Decimals must not be split or rounded"
+    },
+    {
+      "id": "num-003",
+      "direction": "zh→id",
+      "input": "这款产品定价 Rp 1.500.000，福利价 Rp 999.000",
+      "must_contain": ["1.500.000", "999.000"],
+      "must_not_contain": [],
+      "register": "technical",
+      "notes": "Indonesian currency formatting must be preserved"
+    },
+    {
+      "id": "num-004",
+      "direction": "id→zh",
+      "input": "Kemarin live 4 jam, viewer puncak 12 ribu",
+      "must_contain": ["4", "12000", "1.2万", "12,000", "12 千"],
+      "must_not_contain": [],
+      "register": "technical"
+    },
+    {
+      "id": "mixed-001",
+      "direction": "zh→id",
+      "input": "今天 TikTok Shop 那个 CTR 怎么这么低",
+      "must_contain": ["TikTok Shop", "CTR"],
+      "must_not_contain": [],
+      "register": "casual",
+      "notes": "Brand and technical terms stay in English"
+    },
+    {
+      "id": "mixed-002",
+      "direction": "zh→id",
+      "input": "Andi 你去 setup 一下 OBS",
+      "must_contain": ["Andi", "OBS", "setup"],
+      "must_not_contain": [],
+      "register": "direct",
+      "notes": "Names and software names preserved"
+    },
+    {
+      "id": "mixed-003",
+      "direction": "zh→id",
+      "input": "破价款 1 抢光了，再上 100 件",
+      "must_contain": ["100", "promosi", "diskon", "obral"],
+      "must_not_contain": [],
+      "register": "direct",
+      "notes": "Industry jargon '破价款' should translate to promo/diskon concept"
+    },
+    {
+      "id": "mixed-004",
+      "direction": "id→zh",
+      "input": "Bos, GMV target hari ini sudah achieve",
+      "must_contain": ["GMV", "完成", "达到", "目标"],
+      "must_not_contain": [],
+      "register": "direct"
+    },
+    {
+      "id": "edge-empty-like",
+      "direction": "zh→id",
+      "input": "好的",
+      "must_contain": ["ok", "oke", "baik", "ya"],
+      "must_not_contain": [],
+      "register": "casual",
+      "notes": "Very short input must produce a short output, not padded"
+    },
+    {
+      "id": "edge-filler",
+      "direction": "zh→id",
+      "input": "嗯，那个，就是说，明天的播主呢，对，就 Rina 来吧",
+      "must_contain": ["Rina", "besok", "host"],
+      "must_not_contain": ["嗯", "那个", "就是", "uh", "um"],
+      "register": "casual",
+      "notes": "Fillers must be dropped; intent preserved"
+    },
+    {
+      "id": "edge-question",
+      "direction": "zh→id",
+      "input": "你能不能在两点之前发给我？",
+      "must_contain": ["?", "jam 2", "2", "kirim"],
+      "must_not_contain": [],
+      "register": "direct"
+    },
+    {
+      "id": "edge-long",
+      "direction": "zh→id",
+      "input": "今天的复盘啊，第一是流量比昨天少了 20%，第二是转化下降了 0.3 个百分点，第三是退款率上升到 1.2%，明天重点处理这三个问题",
+      "must_contain": ["20%", "0.3", "1.2%"],
+      "must_not_contain": [],
+      "register": "technical",
+      "notes": "Multi-point structured input — all numbers preserved"
+    }
+  ]
+}
