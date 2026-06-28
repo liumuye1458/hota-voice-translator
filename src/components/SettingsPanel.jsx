@@ -80,7 +80,32 @@ export default function SettingsPanel({ isOpen, onClose, settings, onUpdateSetti
           <div className="settings-section">
             <label className="settings-label">翻译引擎 / Engine</label>
             <div className="settings-hint" style={{ fontSize: '13px', color: 'var(--color-success)' }}>
-              GPT-4o（高质量翻译）+ tts-1-hd（高清语音）
+              v2 · GPT-4o + gpt-4o-mini-tts + gpt-4o-transcribe
+            </div>
+          </div>
+
+          {/* STT Vocabulary — biases speech recognition toward business terms */}
+          <div className="settings-section">
+            <label className="settings-label">
+              语音识别词汇 / STT Vocabulary
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginLeft: 6, fontWeight: 400 }}>
+                （提高识别准确率）
+              </span>
+            </label>
+            <textarea
+              className="settings-input"
+              style={{ minHeight: 80, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5, padding: 10 }}
+              placeholder={`列出常用人名、术语、品牌名，例如：
+
+员工：Andi, Rina, Budi
+术语：GMV, ROI, CTR, 福利款, 破价, 憋单
+品牌：HOTA, TikTok Shop, Tokopedia
+货币：IDR, CNY`}
+              value={settings.sttVocabulary || ''}
+              onChange={e => onUpdateSettings({ sttVocabulary: e.target.value })}
+            />
+            <div className="settings-hint">
+              这些词汇会告诉 STT 引擎你的业务上下文，提升人名/术语识别精度。
             </div>
           </div>
 

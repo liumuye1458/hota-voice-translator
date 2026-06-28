@@ -1,5 +1,5 @@
 // Bumped on every meaningful release so user can verify they are on latest build
-const APP_VERSION = 'v1.2.0-' + __BUILD_TIME__
+const APP_VERSION = 'v2.0.0-' + __BUILD_TIME__
 
 export default function StatusBar({ state, onOpenSettings, onForceReset, targetLangLabel }) {
   const stuck = state !== 'idle'
