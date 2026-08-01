@@ -170,13 +170,21 @@ html, body {
   font-size: 15px;
   line-height: 1.5;
   margin-bottom: 6px;
-  padding-right: 20px;
+  padding-right: 56px;              /* room for 2 action buttons */
+  /* Override global user-select:none — DEC-2026-06-29-selectable-message-text */
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
 }
 
 .message-bubble__translation {
   font-size: 13px;
   color: var(--color-text-muted);
   line-height: 1.4;
+  /* Override global user-select:none */
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
 }
 
 .message-bubble__time {
@@ -186,10 +194,17 @@ html, body {
   text-align: right;
 }
 
-.message-bubble__delete {
+/* Action button row (top-right) — copy + delete */
+.message-bubble__actions {
   position: absolute;
   top: 4px;
   right: 4px;
+  display: flex;
+  gap: 4px;
+  z-index: 5;
+}
+
+.message-bubble__action {
   width: 24px;
   height: 24px;
   border: none;
@@ -202,13 +217,33 @@ html, body {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  z-index: 5;
   flex-shrink: 0;
+  padding: 0;
 }
 
-.message-bubble__delete:hover {
+.message-bubble__action:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.message-bubble__action--copy:hover {
+  background: rgba(68, 204, 102, 0.5);
+  color: #fff;
+}
+
+.message-bubble__action--delete:hover {
   background: rgba(255, 68, 68, 0.5);
   color: #fff;
+}
+
+.message-bubble__action--copied {
+  background: rgba(68, 204, 102, 0.6) !important;
+  color: #fff !important;
+}
+
+/* Legacy alias — kept during any transition period */
+.message-bubble__delete {
+  display: none;
 }
 
 /* Interim text display */
