@@ -428,6 +428,45 @@ export function useTranslator(opts) {
   }, [])
 
   // ====================================================================
+  // REPLAY — re-speak an existing translation (skip translate stage)
+  // See DEC-2026-09-04-message-replay-audio
+  // ====================================================================
+  const replay = useCallback(async (text, direction = 'zh→id') => {
+    const cleaned = (text || '').trim()
+    if (!cleaned) return
+    if (!apiKey) {
+      onError?.('请设置 API Key / Set API Key')
+      return
+    }
+    // If currently recording, ignore — user must finish/cancel that first
+    if (stateRef.current.status === STATES.RECORDING ||
+        stateRef.current.status === STATES.TRANSCRIBING) {
+      return
+    }
+
+    // sessionManager.create auto-cancels current session (interrupts current playback)
+    const session = sessionManager.create({ direction, inputMode: 'text' })
+    dispatch({ type: 'START', session, inputMode: 'text', sessionId: session.id })
+
+    // We already have the translated text — synthesize a translate attempt just
+    // for the reducer's stale-rejection contract, then jump to speaking.
+    const { attemptId: translateAttemptId } = session.newTranslateAttempt()
+    const chunks = splitChunks(cleaned)
+
+    dispatch({
+      type: 'TRANSLATION_READY',
+      sessionId: session.id,
+      translateAttemptId,
+      text: cleaned,
+      chunkCount: chunks.length
+    })
+
+    await playChunks(session, chunks)
+  }, [apiKey, voice, onError])
+  // NOTE: playChunks is stable-ish via its own useCallback; not a dep here to
+  // avoid re-creating replay on every audio setting change.
+
+  // ====================================================================
   // playChunks — drive audioEngine and dispatch its events
   // ====================================================================
   const playChunks = useCallback(async (session, chunks) => {
@@ -455,6 +494,7 @@ export function useTranslator(opts) {
     startVoice,
     stopVoice,
     cancelVoice,
+    replay,
     forceReset
   }
 }

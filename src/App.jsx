@@ -85,6 +85,9 @@ export default function App() {
     }])
   }, [])
 
+  // Track which message is currently being replayed (for UI feedback)
+  const [replayingMessageId, setReplayingMessageId] = useState(null)
+
   // ====== The hook =====
   const {
     state: tState,
@@ -92,6 +95,7 @@ export default function App() {
     startVoice,
     stopVoice,
     cancelVoice,
+    replay,
     forceReset
   } = useTranslator({
     apiKey: settings.apiKey,
@@ -175,6 +179,18 @@ export default function App() {
     sendText(cleaned)
   }, [inputText, sendText])
 
+  const handleReplay = useCallback((text, direction, messageId) => {
+    setReplayingMessageId(messageId ?? null)
+    replay(text, direction)
+  }, [replay])
+
+  // Clear replayingMessageId when we return to idle (speaking finished or cancelled)
+  useEffect(() => {
+    if (tState.status === 'idle') {
+      setReplayingMessageId(null)
+    }
+  }, [tState.status])
+
   const handleClearHistory = useCallback(() => {
     setMessages([])
     localStorage.removeItem(LS_MESSAGES)
@@ -216,6 +232,8 @@ export default function App() {
         interimText={''}
         state={uiStatus}
         onDeleteMessage={handleDeleteMessage}
+        onReplay={handleReplay}
+        replayingMessageId={replayingMessageId}
       />
       <TextInputBar
         value={inputText}

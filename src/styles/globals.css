@@ -231,6 +231,26 @@ html, body {
   color: #fff;
 }
 
+.message-bubble__action--replay {
+  font-size: 10px;
+}
+
+.message-bubble__action--replay:hover {
+  background: rgba(34, 170, 221, 0.5);
+  color: #fff;
+}
+
+.message-bubble__action--replaying {
+  background: rgba(34, 170, 221, 0.6) !important;
+  color: #fff !important;
+  animation: replay-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes replay-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 170, 221, 0.4); }
+  50%      { box-shadow: 0 0 0 6px rgba(34, 170, 221, 0); }
+}
+
 .message-bubble__action--delete:hover {
   background: rgba(255, 68, 68, 0.5);
   color: #fff;

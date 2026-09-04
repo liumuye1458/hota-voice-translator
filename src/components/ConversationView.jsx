@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react'
 import MessageBubble from './MessageBubble'
 
-export default function ConversationView({ messages, interimText, state, onReplay, onDeleteMessage }) {
+export default function ConversationView({ messages, interimText, state, onReplay, onDeleteMessage, replayingMessageId }) {
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -18,7 +18,13 @@ export default function ConversationView({ messages, interimText, state, onRepla
           </div>
         )}
         {messages.map(msg => (
-          <MessageBubble key={msg.id || msg.timestamp || Math.random()} message={msg} onDelete={onDeleteMessage} />
+          <MessageBubble
+            key={msg.id || msg.timestamp || Math.random()}
+            message={msg}
+            onDelete={onDeleteMessage}
+            onReplay={onReplay}
+            isReplaying={replayingMessageId === msg.id}
+          />
         ))}
         <div ref={bottomRef} />
       </div>

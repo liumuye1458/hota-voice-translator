@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 
-export default function MessageBubble({ message, onDelete }) {
-  const { originalText, translatedText, fromLang, timestamp } = message
+export default function MessageBubble({ message, onDelete, onReplay, isReplaying }) {
+  const { originalText, translatedText, fromLang, toLang, timestamp } = message
   const isZh = fromLang === 'zh'
   const timeStr = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const [copied, setCopied] = useState(false)
@@ -10,6 +10,15 @@ export default function MessageBubble({ message, onDelete }) {
     e.stopPropagation()
     onDelete?.(message.id, message.timestamp)
   }, [onDelete, message.id, message.timestamp])
+
+  const handleReplay = useCallback((e) => {
+    e.stopPropagation()
+    // Derive direction from message metadata: fromLang is the SOURCE language,
+    // so playback direction is fromLang → toLang (i.e. the same direction as
+    // the original translation used).
+    const direction = fromLang === 'zh' ? 'zh→id' : 'id→zh'
+    onReplay?.(translatedText, direction, message.id)
+  }, [onReplay, translatedText, fromLang, message.id])
 
   // Copy "original\ntranslation" to clipboard. Fall back to legacy execCommand for
   // browsers/contexts where navigator.clipboard is unavailable (rare, mostly non-HTTPS).
@@ -40,6 +49,14 @@ export default function MessageBubble({ message, onDelete }) {
   return (
     <div className={`message-bubble message-bubble--${isZh ? 'zh' : 'id'}`}>
       <div className="message-bubble__actions">
+        <button
+          className={`message-bubble__action message-bubble__action--replay ${isReplaying ? 'message-bubble__action--replaying' : ''}`}
+          onClick={handleReplay}
+          title={isReplaying ? '正在播放 / Playing…' : '重播译文 / Replay translation'}
+          aria-label={isReplaying ? 'Playing' : 'Replay'}
+        >
+          {isReplaying ? '❚❚' : '🔊'}
+        </button>
         <button
           className={`message-bubble__action message-bubble__action--copy ${copied ? 'message-bubble__action--copied' : ''}`}
           onClick={handleCopy}
