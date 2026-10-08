@@ -1,0 +1,496 @@
+{
+  "stamp": "2026-10-08T11-23-47-819Z",
+  "models": [
+    "gpt-6-luna",
+    "gpt-5.4-mini",
+    "gpt-4o"
+  ],
+  "results": {
+    "gpt-6-luna": [
+      {
+        "id": "biz-direct-001",
+        "input": "明天直播 8 点开始，把产品链接提前给我准备好",
+        "output": "Siaran langsung besok mulai pukul 8. Siapkan tautan produk untuk saya sebelumnya.",
+        "ms": 2626,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "biz-direct-002",
+        "input": "把今天的 GMV 报告发我",
+        "output": "Kirim laporan GMV hari ini kepada saya.",
+        "ms": 1667,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "biz-direct-003",
+        "input": "客户问能不能加单 50 个",
+        "output": "Pelanggan bertanya apakah bisa menambah pesanan sebanyak 50 buah.",
+        "ms": 1712,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "biz-direct-004",
+        "input": "Bos, hari ini stok produk A sudah habis",
+        "output": "老板，今天A产品已经卖完了。",
+        "ms": 2161,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-001",
+        "input": "你昨天又迟到了，这事不能再发生",
+        "output": "Kemarin kamu terlambat lagi. Ini tidak boleh terulang lagi.",
+        "ms": 1427,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-002",
+        "input": "这个数据不对，重新算一遍",
+        "output": "Data ini salah, hitung ulang.",
+        "ms": 1594,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-003",
+        "input": "为什么没人通知我直播间被举报了？",
+        "output": "Kenapa tidak ada yang memberi tahu saya bahwa ruang siaran langsung saya dilaporkan?",
+        "ms": 1925,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-004",
+        "input": "Saya tidak setuju dengan keputusan ini",
+        "output": "我不同意这个决定。",
+        "ms": 1863,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-001",
+        "input": "目标 GMV 是 50 juta，今天完成 35 juta",
+        "output": "Target GMV adalah 50 juta, hari ini tercapai 35 juta.",
+        "ms": 1940,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-002",
+        "input": "ROI 1.8，转化率 3.5%，退款率 0.7%",
+        "output": "ROI 1,8, tingkat konversi 3,5%, tingkat pengembalian dana 0,7%",
+        "ms": 1908,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-003",
+        "input": "这款产品定价 Rp 1.500.000，福利价 Rp 999.000",
+        "output": "Produk ini dibanderol Rp 1.500.000, harga spesialnya Rp 999.000.",
+        "ms": 1850,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-004",
+        "input": "Kemarin live 4 jam, viewer puncak 12 ribu",
+        "output": "昨天直播了4个小时，峰值观众1.2万人。",
+        "ms": 1699,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-001",
+        "input": "今天 TikTok Shop 那个 CTR 怎么这么低",
+        "output": "Kenapa CTR TikTok Shop hari ini rendah banget?",
+        "ms": 1720,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-002",
+        "input": "Andi 你去 setup 一下 OBS",
+        "output": "Andi, kamu siapkan OBS dulu.",
+        "ms": 1610,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-003",
+        "input": "破价款 1 抢光了，再上 100 件",
+        "output": "Produk harga banting nomor 1 sudah ludes, tambah 100 unit lagi.",
+        "ms": 3262,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-004",
+        "input": "Bos, GMV target hari ini sudah achieve",
+        "output": "老板，今天的 GMV 目标已经达成了。",
+        "ms": 1864,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-empty-like",
+        "input": "好的",
+        "output": "Baik.",
+        "ms": 1282,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-filler",
+        "input": "嗯，那个，就是说，明天的播主呢，对，就 Rina 来吧",
+        "output": "Untuk streamer besok, ya, Rina saja.",
+        "ms": 2300,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-question",
+        "input": "你能不能在两点之前发给我？",
+        "output": "Bisa kirim ke saya sebelum pukul dua?",
+        "ms": 1615,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-long",
+        "input": "今天的复盘啊，第一是流量比昨天少了 20%，第二是转化下降了 0.3 个百分点，第三是退款率上升到 1.2%，明天重点处理这三个问题",
+        "output": "Evaluasi hari ini: pertama, trafik turun 20% dibanding kemarin; kedua, tingkat konversi turun 0,3 poin persentase; ketiga, tingkat pengembalian dana naik menjadi 1,2%. Besok, fokus menangani ketiga masalah ini.",
+        "ms": 2111,
+        "passed": true,
+        "failures": []
+      }
+    ],
+    "gpt-5.4-mini": [
+      {
+        "id": "biz-direct-001",
+        "input": "明天直播 8 点开始，把产品链接提前给我准备好",
+        "output": "Besok siaran langsung mulai jam 8, siapkan dulu tautan produk untuk saya.",
+        "ms": 1419,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "biz-direct-002",
+        "input": "把今天的 GMV 报告发我",
+        "output": "Kirimkan laporan GMV hari ini ke saya",
+        "ms": 1045,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "biz-direct-003",
+        "input": "客户问能不能加单 50 个",
+        "output": "Pelanggan bertanya apakah bisa menambah pesanan 50 buah.",
+        "ms": 1076,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "biz-direct-004",
+        "input": "Bos, hari ini stok produk A sudah habis",
+        "output": "老板，今天A产品的库存已经卖完了",
+        "ms": 1195,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-001",
+        "input": "你昨天又迟到了，这事不能再发生",
+        "output": "Kamu kemarin terlambat lagi, hal ini tidak boleh terjadi lagi",
+        "ms": 825,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-002",
+        "input": "这个数据不对，重新算一遍",
+        "output": "Data ini tidak benar, hitung ulang sekali lagi",
+        "ms": 937,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-003",
+        "input": "为什么没人通知我直播间被举报了？",
+        "output": "Kenapa tidak ada yang memberi tahu saya bahwa ruang siaran langsung saya dilaporkan?",
+        "ms": 958,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-004",
+        "input": "Saya tidak setuju dengan keputusan ini",
+        "output": "我不同意这个决定",
+        "ms": 962,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-001",
+        "input": "目标 GMV 是 50 juta，今天完成 35 juta",
+        "output": "Target GMV adalah 50 juta, hari ini selesai 35 juta",
+        "ms": 936,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-002",
+        "input": "ROI 1.8，转化率 3.5%，退款率 0.7%",
+        "output": "ROI 1,8, tingkat konversi 3,5%, tingkat pengembalian dana 0,7%",
+        "ms": 896,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-003",
+        "input": "这款产品定价 Rp 1.500.000，福利价 Rp 999.000",
+        "output": "Produk ini dibanderol Rp 1.500.000, harga promo Rp 999.000",
+        "ms": 1093,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-004",
+        "input": "Kemarin live 4 jam, viewer puncak 12 ribu",
+        "output": "昨天直播了4小时，峰值观众1.2万",
+        "ms": 819,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-001",
+        "input": "今天 TikTok Shop 那个 CTR 怎么这么低",
+        "output": "Kenapa CTR TikTok Shop hari ini begitu rendah?",
+        "ms": 812,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-002",
+        "input": "Andi 你去 setup 一下 OBS",
+        "output": "Andi, kamu setup dulu OBS.",
+        "ms": 983,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-003",
+        "input": "破价款 1 抢光了，再上 100 件",
+        "output": "Barang diskon habis terjual, tambah 100 lagi.",
+        "ms": 1044,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-004",
+        "input": "Bos, GMV target hari ini sudah achieve",
+        "output": "老板，今天的 GMV 目标已经达成了",
+        "ms": 788,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-empty-like",
+        "input": "好的",
+        "output": "Baik.",
+        "ms": 1149,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-filler",
+        "input": "嗯，那个，就是说，明天的播主呢，对，就 Rina 来吧",
+        "output": "Besok pembawa acaranya, ya, Rina saja.",
+        "ms": 1011,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-question",
+        "input": "你能不能在两点之前发给我？",
+        "output": "Bisakah kamu mengirimkannya kepadaku sebelum jam dua?",
+        "ms": 979,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-long",
+        "input": "今天的复盘啊，第一是流量比昨天少了 20%，第二是转化下降了 0.3 个百分点，第三是退款率上升到 1.2%，明天重点处理这三个问题",
+        "output": "Hari ini evaluasinya: pertama, trafik turun 20% dibanding kemarin; kedua, konversi turun 0,3 poin persentase; ketiga, tingkat refund naik ke 1,2%. Besok fokus tangani tiga masalah ini.",
+        "ms": 1056,
+        "passed": true,
+        "failures": []
+      }
+    ],
+    "gpt-4o": [
+      {
+        "id": "biz-direct-001",
+        "input": "明天直播 8 点开始，把产品链接提前给我准备好",
+        "output": "Besok siaran langsung mulai jam 8, siapkan tautan produk untuk saya sebelumnya.",
+        "ms": 1130,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "biz-direct-002",
+        "input": "把今天的 GMV 报告发我",
+        "output": "Kirimkan laporan GMV hari ini kepada saya.",
+        "ms": 732,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "biz-direct-003",
+        "input": "客户问能不能加单 50 个",
+        "output": "Pelanggan bertanya apakah bisa menambah 50 unit.",
+        "ms": 758,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "biz-direct-004",
+        "input": "Bos, hari ini stok produk A sudah habis",
+        "output": "老板，今天产品A的库存已经用完了。",
+        "ms": 735,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-001",
+        "input": "你昨天又迟到了，这事不能再发生",
+        "output": "Kamu kemarin terlambat lagi, ini tidak boleh terjadi lagi.",
+        "ms": 760,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-002",
+        "input": "这个数据不对，重新算一遍",
+        "output": "Data ini salah, hitung ulang.",
+        "ms": 779,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-003",
+        "input": "为什么没人通知我直播间被举报了？",
+        "output": "Kenapa tidak ada yang memberi tahu saya bahwa ruang siaran langsung saya dilaporkan?",
+        "ms": 778,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "stern-004",
+        "input": "Saya tidak setuju dengan keputusan ini",
+        "output": "我不同意这个决定。",
+        "ms": 699,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-001",
+        "input": "目标 GMV 是 50 juta，今天完成 35 juta",
+        "output": "Target GMV adalah 50 juta, hari ini selesai 35 juta.",
+        "ms": 782,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-002",
+        "input": "ROI 1.8，转化率 3.5%，退款率 0.7%",
+        "output": "ROI 1.8, tingkat konversi 3.5%, tingkat pengembalian 0.7%",
+        "ms": 797,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-003",
+        "input": "这款产品定价 Rp 1.500.000，福利价 Rp 999.000",
+        "output": "Produk ini dihargai Rp 1.500.000, harga promo Rp 999.000.",
+        "ms": 775,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "num-004",
+        "input": "Kemarin live 4 jam, viewer puncak 12 ribu",
+        "output": "昨天直播4小时，观众峰值1.2万。",
+        "ms": 706,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-001",
+        "input": "今天 TikTok Shop 那个 CTR 怎么这么低",
+        "output": "Kenapa CTR TikTok Shop hari ini begitu rendah?",
+        "ms": 728,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-002",
+        "input": "Andi 你去 setup 一下 OBS",
+        "output": "Andi, kamu pergi atur OBS.",
+        "ms": 941,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-003",
+        "input": "破价款 1 抢光了，再上 100 件",
+        "output": "Produk diskon 1 habis terjual, tambah 100 lagi.",
+        "ms": 913,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "mixed-004",
+        "input": "Bos, GMV target hari ini sudah achieve",
+        "output": "老板，今天的GMV目标已经达成。",
+        "ms": 797,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-empty-like",
+        "input": "好的",
+        "output": "Baik.",
+        "ms": 707,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-filler",
+        "input": "嗯，那个，就是说，明天的播主呢，对，就 Rina 来吧",
+        "output": "Besok pembawa acaranya Rina.",
+        "ms": 757,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-question",
+        "input": "你能不能在两点之前发给我？",
+        "output": "Bisakah kamu mengirimkannya kepadaku sebelum jam dua?",
+        "ms": 818,
+        "passed": true,
+        "failures": []
+      },
+      {
+        "id": "edge-long",
+        "input": "今天的复盘啊，第一是流量比昨天少了 20%，第二是转化下降了 0.3 个百分点，第三是退款率上升到 1.2%，明天重点处理这三个问题",
+        "output": "Rekap hari ini, pertama, lalu lintas turun 20% dibandingkan kemarin, kedua, konversi turun 0,3 poin persentase, ketiga, tingkat pengembalian naik menjadi 1,2%. Fokus tangani tiga masalah ini besok.",
+        "ms": 1169,
+        "passed": true,
+        "failures": []
+      }
+    ]
+  }
+}

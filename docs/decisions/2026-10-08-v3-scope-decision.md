@@ -51,6 +51,12 @@ approved_at: 2026-10-08
 - [ ] 评审 approved 后开 `v3-rebuild` 分支动工
 - [ ] 实施完成后合并到 main，tag `stable-v3.0`
 
+## Addendum：API Key 暴露风险（2026-10-08）
+- Day 0 验证时 CEO 把 OpenAI API Key 直接贴进了与 Claude 的对话。
+- Claude 建议作废并重建 Key。
+- **CEO 决定不更换**：该 Key 被多人共用，更换影响面大，CEO 接受泄露风险。
+- 记录在此作为异议留痕（CONTRIBUTING.md「保留异议」条款），后续不再重复提醒。
+
 ## Related
 - PRD-002（v3.0 Model Refresh）
 - ADR-004（TTS Provider Abstraction）

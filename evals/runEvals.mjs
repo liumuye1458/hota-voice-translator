@@ -1,198 +1,98 @@
 #!/usr/bin/env node
-// evals/runEvals.mjs
+// evals/runEvals.mjs — translation golden evals (PRD-002 §6)
 //
-// Run translation golden tests against live OpenAI API.
+// Uses the PRODUCTION translateText() so the eval tests exactly what users run.
 //
 // Usage:
-//   OPENAI_API_KEY=sk-... node evals/runEvals.mjs translation
-//   OPENAI_API_KEY=sk-... node evals/runEvals.mjs all
+//   OPENAI_API_KEY=sk-... node evals/runEvals.mjs
+//   OPENAI_API_KEY=sk-... node evals/runEvals.mjs --models gpt-6-luna,gpt-5.4-mini,gpt-4o
 //
-// Cost estimate per full run: ~$0.01 (20 calls × ~50 tokens × $2.50/1M)
+// Writes evals/history/<timestamp>.json with every output for later diffing.
 
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { translateText } from '../src/services/openai.js'
+import { getLangName } from '../src/config/languages.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const ROOT = path.resolve(__dirname, '..')
-
-const OPENAI_API = 'https://api.openai.com/v1'
 const apiKey = process.env.OPENAI_API_KEY
-const mode = process.argv[2] || 'all'
-
-if (!apiKey && mode !== 'fsm') {
-  console.error('ERROR: Set OPENAI_API_KEY env var to run translation evals.')
-  console.error('       FSM tests don\'t need a key — run: npm test')
+if (!apiKey) {
+  console.error('ERROR: set OPENAI_API_KEY. (FSM / unit tests need no key: npm test)')
   process.exit(1)
 }
 
-// Language-code → human-readable language name (for prompt)
-const LANG_NAMES = {
-  'zh': 'Chinese (Simplified, 简体中文)',
-  'id': 'Indonesian (Bahasa Indonesia)',
-  'en': 'English',
-  'vi': 'Vietnamese (Tiếng Việt)',
-  'th': 'Thai (ภาษาไทย)',
-  'es': 'Spanish (Español)',
-  'ru': 'Russian (Русский)',
-  'ar': 'Arabic (العربية)'
-}
+const modelsArg = process.argv.indexOf('--models')
+const MODELS = modelsArg > -1
+  ? process.argv[modelsArg + 1].split(',').map(s => s.trim()).filter(Boolean)
+  : ['gpt-6-luna']
 
-function directionToLangs(direction) {
-  // 'zh→id' → { source: 'Chinese...', target: 'Indonesian...' }
+const CODE = { zh: 'zh-CN', id: 'id-ID', en: 'en-US', vi: 'vi-VN', th: 'th-TH', es: 'es-ES', ru: 'ru-RU', ar: 'ar-SA' }
+function langsFor(direction) {
   const [src, tgt] = direction.split('→')
-  return { source: LANG_NAMES[src] || src, target: LANG_NAMES[tgt] || tgt }
+  return { source: getLangName(CODE[src]), target: getLangName(CODE[tgt]) }
 }
 
-async function translate(text, sourceLang, targetLang) {
-  const systemPrompt = `Translate the user's message from ${sourceLang} to ${targetLang}.
-
-Rules:
-- Output MUST be in ${targetLang}. Do not output ${sourceLang}. Do not output English unless ${targetLang} IS English.
-- The input is a speech-to-text transcript; silently drop filler words ("嗯", "那个", "就是", "uh") and fix obvious mis-recognitions.
-- Preserve the speaker's tone exactly. Do not soften criticism. Do not add politeness words that weren't in the original.
-- Do not pad. Brief input → brief output.
-- Output ONLY the translation. No quotes, no explanation, no labels.`
-
-  const res = await fetch(`${OPENAI_API}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      temperature: 0,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: text }
-      ]
-    })
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message || `HTTP ${res.status}`)
-  }
-  const data = await res.json()
-  return {
-    output: data.choices[0].message.content.trim(),
-    usage: data.usage  // { prompt_tokens, completion_tokens, total_tokens }
-  }
-}
-
-function assertCase(testCase, output) {
+export function assertCase(tc, output) {
   const lower = output.toLowerCase()
+  const has = (s) => lower.includes(String(s).toLowerCase())
   const failures = []
-  // must_contain — at least one OR-style match for synonyms
-  if (testCase.must_contain && testCase.must_contain.length > 0) {
-    const containsAny = testCase.must_contain.some(needle => lower.includes(needle.toLowerCase()))
-    // For multi-word must_contain (e.g. ["8", "link", "produk"]) — interpret as "ALL must appear"
-    // BUT if a case has synonym alternatives marked in notes, allow OR. Default: ALL.
-    const allRequired = testCase.must_contain.every(needle => lower.includes(needle.toLowerCase()))
-    // Heuristic: if any item is multi-char and unique-looking (a name or specific term), require all.
-    // For now, use ALL match (strict). User can mark notes for OR semantics.
-    if (!allRequired) {
-      const missing = testCase.must_contain.filter(needle => !lower.includes(needle.toLowerCase()))
-      failures.push(`must_contain missing: [${missing.join(', ')}]`)
-    }
+
+  const missing = (tc.must_contain || []).filter(s => !has(s))
+  if (missing.length) failures.push(`missing: [${missing.join(', ')}]`)
+
+  const any = tc.must_contain_any || []
+  const groups = any.length && Array.isArray(any[0]) ? any : (any.length ? [any] : [])
+  for (const g of groups) {
+    if (!g.some(has)) failures.push(`none of: [${g.join(' | ')}]`)
   }
-  if (testCase.must_not_contain && testCase.must_not_contain.length > 0) {
-    const found = testCase.must_not_contain.filter(needle => lower.includes(needle.toLowerCase()))
-    if (found.length > 0) {
-      failures.push(`must_not_contain found: [${found.join(', ')}]`)
-    }
-  }
+
+  const forbidden = (tc.must_not_contain || []).filter(has)
+  if (forbidden.length) failures.push(`forbidden: [${forbidden.join(', ')}]`)
+
   return { passed: failures.length === 0, failures }
 }
 
-async function runTranslationEvals() {
-  const goldenPath = path.join(ROOT, 'evals', 'translation-golden.json')
-  const golden = JSON.parse(await fs.readFile(goldenPath, 'utf8'))
-
-  console.log(`\n=== Translation Golden Evals (${golden.cases.length} cases) ===\n`)
-  let passed = 0
-  let failed = 0
-  let totalInputTokens = 0
-  let totalOutputTokens = 0
-  const results = []
-
-  for (const tc of golden.cases) {
-    process.stdout.write(`  ${tc.id} (${tc.direction})... `)
-    const { source, target } = directionToLangs(tc.direction)
-    try {
-      const { output, usage } = await translate(tc.input, source, target)
-      totalInputTokens += usage.prompt_tokens
-      totalOutputTokens += usage.completion_tokens
-      const verdict = assertCase(tc, output)
-      if (verdict.passed) {
-        console.log('PASS')
-        passed += 1
-      } else {
-        console.log('FAIL')
-        console.log(`    input:  ${tc.input}`)
-        console.log(`    output: ${output}`)
-        for (const f of verdict.failures) console.log(`    issue:  ${f}`)
-        failed += 1
-      }
-      results.push({ id: tc.id, passed: verdict.passed, input: tc.input, output, failures: verdict.failures })
-    } catch (err) {
-      console.log(`ERROR: ${err.message}`)
-      failed += 1
-      results.push({ id: tc.id, error: err.message })
-    }
-  }
-
-  // Cost estimate (gpt-4o pricing: $2.50/1M input, $10/1M output)
-  const costUSD = (totalInputTokens / 1e6 * 2.50) + (totalOutputTokens / 1e6 * 10)
-
-  console.log(`\n=== Summary ===`)
-  console.log(`  Passed: ${passed}/${golden.cases.length}`)
-  console.log(`  Failed: ${failed}/${golden.cases.length}`)
-  console.log(`  Tokens: ${totalInputTokens} in + ${totalOutputTokens} out`)
-  console.log(`  Cost:   $${costUSD.toFixed(4)}`)
-  console.log()
-
-  // Write history
-  const histDir = path.join(ROOT, 'evals', 'history')
-  await fs.mkdir(histDir, { recursive: true })
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const histFile = path.join(histDir, `${timestamp}.json`)
-  await fs.writeFile(histFile, JSON.stringify({
-    timestamp,
-    passed,
-    failed,
-    total: golden.cases.length,
-    tokens: { in: totalInputTokens, out: totalOutputTokens },
-    costUSD,
-    results
-  }, null, 2))
-  console.log(`  History: evals/history/${timestamp}.json`)
-
-  return failed === 0
-}
-
-async function runFSMEvals() {
-  console.log('\n=== FSM Integration Tests ===')
-  console.log('  (run via: npm test)')
-  console.log()
-}
-
-// Main
-;(async () => {
+async function runOne(tc, model) {
+  const { source, target } = langsFor(tc.direction)
+  const t0 = Date.now()
   try {
-    if (mode === 'translation' || mode === 'all') {
-      const ok = await runTranslationEvals()
-      if (!ok) process.exit(1)
-    }
-    if (mode === 'fsm' || mode === 'all') {
-      await runFSMEvals()
-    }
-    if (!['translation', 'fsm', 'all'].includes(mode)) {
-      console.error(`Unknown mode: ${mode}. Use: translation | fsm | all`)
-      process.exit(1)
-    }
+    const output = await translateText(tc.input, source, target, apiKey, '', undefined, model)
+    return { output, ms: Date.now() - t0, ...assertCase(tc, output) }
   } catch (err) {
-    console.error('FATAL:', err.message)
-    process.exit(1)
+    return { output: null, ms: Date.now() - t0, passed: false, failures: [`ERROR ${err.status ?? ''} ${err.message}`] }
   }
-})()
+}
+
+const golden = JSON.parse(await fs.readFile(path.join(__dirname, 'translation-golden.json'), 'utf8'))
+console.log(`\nTranslation golden evals — ${golden.cases.length} cases × ${MODELS.length} model(s): ${MODELS.join(', ')}\n`)
+
+const results = {}
+for (const m of MODELS) results[m] = []
+
+for (const tc of golden.cases) {
+  const outs = await Promise.all(MODELS.map(m => runOne(tc, m)))
+  const marks = outs.map((o, i) => `${MODELS[i]}=${o.passed ? 'PASS' : 'FAIL'}`).join('  ')
+  console.log(`${tc.id.padEnd(18)} ${marks}`)
+  outs.forEach((o, i) => {
+    results[MODELS[i]].push({ id: tc.id, input: tc.input, ...o })
+    if (!o.passed) {
+      console.log(`    [${MODELS[i]}] ${o.output ?? '(no output)'}`)
+      for (const f of o.failures) console.log(`      - ${f}`)
+    }
+  })
+}
+
+console.log('\nSummary')
+for (const m of MODELS) {
+  const rs = results[m]
+  const pass = rs.filter(r => r.passed).length
+  const avgMs = Math.round(rs.reduce((a, r) => a + r.ms, 0) / rs.length)
+  console.log(`  ${m.padEnd(16)} ${pass}/${rs.length} passed   avg ${avgMs} ms`)
+}
+
+const histDir = path.join(__dirname, 'history')
+await fs.mkdir(histDir, { recursive: true })
+const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+await fs.writeFile(path.join(histDir, `${stamp}.json`), JSON.stringify({ stamp, models: MODELS, results }, null, 2))
+console.log(`\nSaved evals/history/${stamp}.json`)

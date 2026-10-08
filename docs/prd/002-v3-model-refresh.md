@@ -1,10 +1,10 @@
 ---
 id: PRD-002
 title: v3.0 Model Refresh — GPT-6 翻译 + 新 STT + TTS Provider 抽取
-status: Draft (revised post Codex round-2)
+status: Approved
 author: Claude
-approved_by:
-approved_at:
+approved_by: jimen
+approved_at: 2026-10-08
 ---
 
 # v3.0 Model Refresh

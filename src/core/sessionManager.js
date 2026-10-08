@@ -40,8 +40,10 @@ export class Session {
       mediaStream: null,
       mediaRecorder: null,
       currentAudioPlayback: null,
-      blobUrls: new Set()
+      revokers: new Set()          // TTS result.revoke() functions (ADR-004)
     }
+    // Per-turn observability record (PRD-002 §6), filled in by useTranslator
+    this.metrics = {}
     this.errors = []
     this.cancelled = false
     this._cancelReason = null
@@ -93,8 +95,10 @@ export class Session {
     })
   }
 
-  trackBlobUrl(url) {
-    if (url) this.resources.blobUrls.add(url)
+  // Register a TTS result's revoke() so cancel() can release it as a backstop.
+  // Revoke functions are idempotent, so the audio engine may also call them early.
+  trackRevoker(revoke) {
+    if (typeof revoke === 'function') this.resources.revokers.add(revoke)
   }
 
   cancel(reason = 'unknown') {
@@ -141,11 +145,11 @@ export class Session {
       this.resources.currentAudioPlayback = null
     }
 
-    // 5. Revoke blob URLs
-    for (const url of this.resources.blobUrls) {
-      try { URL.revokeObjectURL(url) } catch (e) { /* ignore */ }
+    // 5. Release TTS results
+    for (const revoke of this.resources.revokers) {
+      try { revoke() } catch (e) { /* ignore */ }
     }
-    this.resources.blobUrls.clear()
+    this.resources.revokers.clear()
   }
 }
 

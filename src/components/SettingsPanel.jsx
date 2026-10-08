@@ -1,5 +1,11 @@
 import { useState } from 'react'
 import { LANGUAGES } from '../config/languages'
+import {
+  TRANSLATION_MODELS,
+  STT_MODELS,
+  DEFAULT_TRANSLATION_MODEL,
+  DEFAULT_STT_MODEL
+} from '../core/modelRouter'
 
 const VOICES = [
   { id: 'nova', label: 'Nova', desc: '女声 · 温暖友好' },
@@ -10,8 +16,19 @@ const VOICES = [
   { id: 'onyx', label: 'Onyx', desc: '男声 · 低沉有力' }
 ]
 
-export default function SettingsPanel({ isOpen, onClose, settings, onUpdateSettings, onClearHistory }) {
+export default function SettingsPanel({ isOpen, onClose, settings, onUpdateSettings, onClearHistory, onCheckModels }) {
   const [keyVisible, setKeyVisible] = useState(false)
+  const [checking, setChecking] = useState(false)
+  const [checkResults, setCheckResults] = useState(null)
+
+  const handleCheck = async () => {
+    setChecking(true)
+    try {
+      setCheckResults(await onCheckModels())
+    } finally {
+      setChecking(false)
+    }
+  }
 
   const handleClear = () => {
     if (confirm('确定清空所有对话记录？\nClear all conversation history?')) {
@@ -76,12 +93,57 @@ export default function SettingsPanel({ isOpen, onClose, settings, onUpdateSetti
             <div className="settings-hint">左键 = 中文，右键 = 目标语言</div>
           </div>
 
-          {/* Engine */}
+          {/* Models — PRD-002 */}
           <div className="settings-section">
-            <label className="settings-label">翻译引擎 / Engine</label>
-            <div className="settings-hint" style={{ fontSize: '13px', color: 'var(--color-success)' }}>
-              v2 · GPT-4o + gpt-4o-mini-tts + gpt-4o-transcribe
-            </div>
+            <label className="settings-label">翻译模型 / Translation Model</label>
+            <select
+              className="settings-select"
+              value={settings.translationModel || DEFAULT_TRANSLATION_MODEL}
+              onChange={e => onUpdateSettings({ translationModel: e.target.value })}
+            >
+              {TRANSLATION_MODELS.map(m => (
+                <option key={m.id} value={m.id}>{m.label}</option>
+              ))}
+            </select>
+            <div className="settings-hint">Luna 不可用时自动降级到 GPT-5.4 mini。效果不满意可切回 GPT-4o。</div>
+          </div>
+
+          <div className="settings-section">
+            <label className="settings-label">语音识别模型 / STT Model</label>
+            <select
+              className="settings-select"
+              value={settings.sttModel || DEFAULT_STT_MODEL}
+              onChange={e => onUpdateSettings({ sttModel: e.target.value })}
+            >
+              {STT_MODELS.map(m => (
+                <option key={m.id} value={m.id}>{m.label}</option>
+              ))}
+            </select>
+            <div className="settings-hint">语音合成：gpt-4o-mini-tts（2027-01-06 停服前会迁移）</div>
+          </div>
+
+          <div className="settings-section">
+            <button
+              className="settings-btn-sm"
+              onClick={handleCheck}
+              disabled={!apiKey || checking}
+              style={{ width: '100%', padding: '10px 12px' }}
+            >
+              {checking ? '检测中…' : '检测可用模型 / Check models'}
+            </button>
+            {checkResults && (
+              <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.7 }}>
+                {TRANSLATION_MODELS.map(m => {
+                  const r = checkResults[m.id]
+                  if (!r) return null
+                  return (
+                    <div key={m.id} style={{ color: r.ok ? 'var(--color-success)' : 'var(--color-error)' }}>
+                      {r.ok ? '✓' : '✗'} {m.id}{r.ok ? '' : ` — ${r.status ?? '网络错误'} ${r.message.slice(0, 80)}`}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* STT Vocabulary — biases speech recognition toward business terms */}

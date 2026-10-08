@@ -1,10 +1,10 @@
 ---
 id: ADR-004
 title: TTS Provider 抽取（blob 契约，为 Jan 2027 迁移隔离调用边界）
-status: Draft (revised post Codex round-2)
+status: Approved
 author: Claude
-approved_by:
-approved_at:
+approved_by: jimen
+approved_at: 2026-10-08
 related_prd: PRD-002
 ---
 
