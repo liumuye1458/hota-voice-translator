@@ -247,7 +247,7 @@ git push -f origin rollback-to-v2:main
 | `gpt-5.4-mini` | 20/20 | 1.0 s | 整体好；"破价款 1" 丢了编号 |
 | `gpt-4o` | 20/20 | 0.8 s | 偏直译（"pergi atur OBS"），流量→"lalu lintas"（道路交通）用错领域 |
 
-**与 PRD 假设的偏差**：§5.2 / 调研中"Luna 延迟更低"不成立——Luna 翻译环节比 Mini 慢约 0.9 s/轮。质量更好但更慢，默认值是否保持 Luna 需 CEO 决定（见 DEC 待补）。
+**与 PRD 假设的偏差**：§5.2 / 调研中"Luna 延迟更低"不成立——Luna 翻译环节比 Mini 慢约 0.9 s/轮。质量更好但更慢。CEO 于 2026-10-08 决定默认保持 Luna（见 DEC-2026-10-08-v3-scope-decision 附录）。
 
 ### 10.3 golden 断言修正（v1.1 → v1.2）
 原断言会判错正确译文：要求印尼语输出含英文 "report"（应为 laporan）、只认 "telat" 不认 "terlambat"、不接受印尼语小数逗号（0,3）、"mengirimkan" 因 meN- 前缀不含 "kirim"、同义词列表按"全部包含"判。新增 `must_contain_any`（支持分组）。这是修正测试本身，不是降低标准。
