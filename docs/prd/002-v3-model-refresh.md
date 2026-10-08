@@ -1,10 +1,10 @@
 ---
 id: PRD-002
 title: v3.0 Model Refresh — GPT-6 翻译 + 新 STT + TTS Provider 抽取
-status: Draft (revised post Codex round-2)
+status: Approved
 author: Claude
-approved_by:
-approved_at:
+approved_by: jimen
+approved_at: 2026-10-08
 ---
 
 # v3.0 Model Refresh
@@ -232,7 +232,33 @@ git push -f origin rollback-to-v2:main
 | STT 识别严重出错 | CEO | Settings → STT 下拉切 `gpt-4o-transcribe` | 10 秒 | 下一次语音 |
 | 多个 bug / 不稳定 | CEO 或 Claude | 发布回退（§9.3） | 3 分钟 | 访问线上页面确认 version 号 |
 
-## 10. Related
+## 10. Implementation Results（2026-10-08，branch `v3-rebuild`）
+
+### 10.1 Eval 发现的阻断性 bug（已修）
+- `gpt-6-luna` **拒绝 `temperature: 0`**（400 "Only the default (1) value is supported"）。v2 起每次翻译都传 `temperature: 0`，若直接上线 Luna 会 **100% 翻译失败**；且报错文本含 "with this model"，会被误判为"账户不支持 Luna"→ 每次都粘性降级 + 错误横幅。
+- 修复：GPT-6 系列不发送 temperature；错误分类改为"参数错误 = request 类，绝不触发降级"，并收紧"模型不可用"的匹配规则。均有回归测试。
+- 教训：Day 0 验证用的最小请求没带生产参数。今后 Day 0 必须用**生产代码路径**发请求。
+
+### 10.2 金标准结果（golden v1.2，20 case）
+
+| 模型 | 通过 | 翻译平均耗时 | 定性观察 |
+|------|------|------------|---------|
+| `gpt-6-luna` | 20/20 | **1.9 s** | 行业术语最准（播主→streamer、破价款 1 保留编号），口语最自然；temperature 固定为 1，同一句多次翻译可能不同 |
+| `gpt-5.4-mini` | 20/20 | 1.0 s | 整体好；"破价款 1" 丢了编号 |
+| `gpt-4o` | 20/20 | 0.8 s | 偏直译（"pergi atur OBS"），流量→"lalu lintas"（道路交通）用错领域 |
+
+**与 PRD 假设的偏差**：§5.2 / 调研中"Luna 延迟更低"不成立——Luna 翻译环节比 Mini 慢约 0.9 s/轮。质量更好但更慢。CEO 于 2026-10-08 决定默认保持 Luna（见 DEC-2026-10-08-v3-scope-decision 附录）。
+
+### 10.3 golden 断言修正（v1.1 → v1.2）
+原断言会判错正确译文：要求印尼语输出含英文 "report"（应为 laporan）、只认 "telat" 不认 "terlambat"、不接受印尼语小数逗号（0,3）、"mengirimkan" 因 meN- 前缀不含 "kirim"、同义词列表按"全部包含"判。新增 `must_contain_any`（支持分组）。这是修正测试本身，不是降低标准。
+
+### 10.4 其他
+- audioEngine 预取原来存的是 URL：若预取未完成就轮到下一段，会**重复请求同一段 TTS（重复计费）**。改为保存 Promise，已修。
+- STT：`gpt-transcribe` 在本账户可用（合成样本把 "lima puluh juta" 规整为 "50 juta"）；按 §7 Q2，默认仍为 `gpt-4o-transcribe`，待 10-15 条真实录音 A/B 后再决定。
+- 测试：65/65（新增 router 19、provider 7）。浏览器 smoke：零 console 错误，模型选择刷新后保留。
+- 未在浏览器内用真实 Key 跑端到端语音（不把生产 Key 注入浏览器）；由 CEO 实测覆盖（§6 验收项）。
+
+## 11. Related
 
 - ADR-004（TTS Provider 抽象层 — 修订版）
 - DEC-2026-10-08-v3-scope-decision（Q1/Q2/Q3 决定过程）

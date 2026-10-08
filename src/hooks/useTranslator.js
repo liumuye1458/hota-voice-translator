@@ -13,7 +13,15 @@ import { reducer, initialState, STATES, shouldAutoReset } from '../core/translat
 import { sessionManager } from '../core/sessionManager.js'
 import { audioEngine } from '../core/audioEngine.js'
 import { split as splitChunks } from '../core/sentenceChunker.js'
-import { translateText, synthesizeSpeech, transcribeAudio } from '../services/openai.js'
+import { translateText, transcribeAudio } from '../services/openai.js'
+import { OpenAIStandardTTS } from '../core/ttsProvider.js'
+import {
+  TranslationModelRouter,
+  runWithModelRouting,
+  classifyError,
+  DEFAULT_TRANSLATION_MODEL,
+  DEFAULT_STT_MODEL
+} from '../core/modelRouter.js'
 
 // Language-name resolver. Used to build the prompt.
 // Imports from config; if unavailable, fall back to literal codes.
@@ -44,7 +52,10 @@ export function useTranslator(opts) {
     customInstructions = '',
     targetLangCode = 'id-ID',
     sttPrompt = '',
+    translationModel = DEFAULT_TRANSLATION_MODEL,
+    sttModel = DEFAULT_STT_MODEL,
     onTranslationDone,
+    onModelFallback,
     onError
   } = opts
 
@@ -55,6 +66,35 @@ export function useTranslator(opts) {
   // Stable refs to latest values for use inside async callbacks
   const optsRef = useRef(opts)
   useEffect(() => { optsRef.current = opts }, [opts])
+
+  // Sticky translation-model fallback (PRD-002 §5.1). A new router — i.e. a
+  // cleared downgrade — whenever the user picks a different model in Settings.
+  const routerRef = useRef(new TranslationModelRouter(translationModel))
+  useEffect(() => {
+    routerRef.current = new TranslationModelRouter(translationModel)
+  }, [translationModel])
+
+  // "重新检测" in Settings: forget this page session's downgrade
+  const resetModelRouting = useCallback(() => {
+    routerRef.current.reset()
+  }, [])
+
+  // Translate under the routing policy and record which model actually answered.
+  const translateRouted = useCallback(async (session, text, sourceLangName, targetLangName, signal) => {
+    const { result, model } = await runWithModelRouting(
+      routerRef.current,
+      (m) => translateText(text, sourceLangName, targetLangName, apiKey, customInstructions, signal, m),
+      {
+        onFallback: (ev) => {
+          session.metrics.fallback_triggered = true
+          console.info('translation_model_fallback', ev)
+          optsRef.current.onModelFallback?.(ev)
+        }
+      }
+    )
+    session.metrics.model_translation = model
+    return result
+  }, [apiKey, customInstructions])
 
   // MediaRecorder state (kept here to allow cleanup from forceReset)
   const recorderStateRef = useRef({
@@ -150,6 +190,7 @@ export function useTranslator(opts) {
     const session = sessionManager.create({ direction: 'zh→id', inputMode: 'text' })
 
     dispatch({ type: 'START', session, inputMode: 'text', sessionId: session.id })
+    startMetrics(session, { input: 'text', model_stt: null })
 
     // Translate
     const { attemptId: translateAttemptId, signal: tlSignal } = session.newTranslateAttempt()
@@ -158,17 +199,11 @@ export function useTranslator(opts) {
 
     let translation
     try {
-      translation = await translateText(
-        cleaned,
-        sourceLangName,
-        targetLangName,
-        apiKey,
-        customInstructions,
-        tlSignal
-      )
+      translation = await translateRouted(session, cleaned, sourceLangName, targetLangName, tlSignal)
     } catch (err) {
       if (tlSignal.aborted || session.cancelled) return
       session.recordError({ code: 'translate-failed', msg: err?.message })
+      logTurn(session, 'translate-failed', err)
       dispatch({
         type: 'ERROR',
         sessionId: session.id,
@@ -176,7 +211,7 @@ export function useTranslator(opts) {
         code: 'translate-failed',
         message: err?.message || 'translation failed'
       })
-      onError?.(err?.message || '翻译出错')
+      onError?.('翻译出错：' + userMessage(err))
       return
     }
     if (!translation || !sessionManager.isCurrent(session)) return
@@ -202,7 +237,7 @@ export function useTranslator(opts) {
 
     // Play
     await playChunks(session, chunks)
-  }, [apiKey, customInstructions, targetLangCode, voice, onTranslationDone, onError])
+  }, [apiKey, targetLangCode, voice, translateRouted, onTranslationDone, onError])
 
   // ====================================================================
   // VOICE mode — right side (target lang → Chinese) via MediaRecorder
@@ -216,6 +251,7 @@ export function useTranslator(opts) {
     const session = sessionManager.create({ direction, inputMode: 'voice' })
 
     dispatch({ type: 'START', session, side, inputMode: 'voice', sessionId: session.id })
+    startMetrics(session, { input: 'voice', model_stt: sttModel })
 
     // Acquire mic
     let stream
@@ -270,7 +306,7 @@ export function useTranslator(opts) {
       session.cancel('start-failed')
       return
     }
-  }, [apiKey, onError])
+  }, [apiKey, sttModel, onError])
 
   // ====================================================================
   // Stop voice — process recorded audio
@@ -324,11 +360,13 @@ export function useTranslator(opts) {
         sttLang,
         sttPrompt,
         apiKey,
-        trSignal
+        trSignal,
+        sttModel
       )
     } catch (err) {
       if (trSignal.aborted || session.cancelled) return
       session.recordError({ code: 'transcribe-failed', msg: err?.message })
+      logTurn(session, 'transcribe-failed', err)
       dispatch({
         type: 'ERROR',
         sessionId: session.id,
@@ -336,7 +374,7 @@ export function useTranslator(opts) {
         code: 'transcribe-failed',
         message: err?.message
       })
-      onError?.('语音识别失败: ' + (err?.message || ''))
+      onError?.('语音识别失败：' + userMessage(err))
       return
     }
     if (!sessionManager.isCurrent(session)) return
@@ -366,17 +404,11 @@ export function useTranslator(opts) {
 
     let translation
     try {
-      translation = await translateText(
-        transcript,
-        sourceLangName,
-        targetLangName,
-        apiKey,
-        customInstructions,
-        tlSignal
-      )
+      translation = await translateRouted(session, transcript, sourceLangName, targetLangName, tlSignal)
     } catch (err) {
       if (tlSignal.aborted || session.cancelled) return
       session.recordError({ code: 'translate-failed', msg: err?.message })
+      logTurn(session, 'translate-failed', err)
       dispatch({
         type: 'ERROR',
         sessionId: session.id,
@@ -384,7 +416,7 @@ export function useTranslator(opts) {
         code: 'translate-failed',
         message: err?.message
       })
-      onError?.('翻译失败: ' + (err?.message || ''))
+      onError?.('翻译出错：' + userMessage(err))
       return
     }
     if (!translation || !sessionManager.isCurrent(session)) return
@@ -407,7 +439,7 @@ export function useTranslator(opts) {
     })
 
     await playChunks(session, chunks)
-  }, [state.session, apiKey, customInstructions, targetLangCode, sttPrompt, voice, onTranslationDone, onError])
+  }, [state.session, apiKey, targetLangCode, sttPrompt, sttModel, voice, translateRouted, onTranslationDone, onError])
 
   // ====================================================================
   // Cancel voice — abort current recording without processing
@@ -447,6 +479,7 @@ export function useTranslator(opts) {
     // sessionManager.create auto-cancels current session (interrupts current playback)
     const session = sessionManager.create({ direction, inputMode: 'text' })
     dispatch({ type: 'START', session, inputMode: 'text', sessionId: session.id })
+    startMetrics(session, { input: 'replay', model_stt: null })
 
     // We already have the translated text — synthesize a translate attempt just
     // for the reducer's stale-rejection contract, then jump to speaking.
@@ -470,18 +503,24 @@ export function useTranslator(opts) {
   // playChunks — drive audioEngine and dispatch its events
   // ====================================================================
   const playChunks = useCallback(async (session, chunks) => {
-    const ttsBound = (text, v, signal) => synthesizeSpeech(text, v, apiKey, signal)
+    const provider = new OpenAIStandardTTS({ apiKey })
+    session.metrics.tts_provider = provider.name
+    session.metrics.tts_chunks = chunks.length
+    session.metrics.tts_failed_chunks = 0
 
     await audioEngine.play(
       session,
       chunks,
       voice,
-      ttsBound,
+      provider,
       (eventType, payload) => {
         // Forward audio events to FSM
         dispatch({ type: eventType, ...payload })
-        // After SPEAK_DONE, dispose session
+        if (eventType === 'CHUNK_FAILED') {
+          session.metrics.tts_failed_chunks += 1
+        }
         if (eventType === 'SPEAK_DONE') {
+          logTurn(session, session.metrics.tts_failed_chunks ? 'ok-with-tts-failures' : 'ok')
           sessionManager.dispose(session)
         }
       }
@@ -495,7 +534,51 @@ export function useTranslator(opts) {
     stopVoice,
     cancelVoice,
     replay,
+    resetModelRouting,
     forceReset
+  }
+}
+
+// ---- Per-turn observability (PRD-002 §6) ----------------------------
+
+function startMetrics(session, { input, model_stt }) {
+  session.metrics = {
+    t0: typeof performance !== 'undefined' ? performance.now() : Date.now(),
+    input,
+    direction: session.direction,
+    model_stt,
+    model_translation: null,
+    fallback_triggered: false
+  }
+}
+
+// One structured line per turn: open DevTools → Console → filter "translator_turn".
+function logTurn(session, outcome, err) {
+  const m = session.metrics || {}
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+  console.info('translator_turn', {
+    sessionId: session.id,
+    outcome,
+    input: m.input,
+    direction: m.direction,
+    model_stt: m.model_stt,
+    model_translation: m.model_translation,
+    fallback_triggered: m.fallback_triggered,
+    tts_provider: m.tts_provider || null,
+    tts_chunks: m.tts_chunks ?? null,
+    tts_failed_chunks: m.tts_failed_chunks ?? null,
+    latency_ms: m.t0 != null ? Math.round(now - m.t0) : null,
+    error: err ? { status: err.status ?? null, code: err.code ?? null, message: err.message } : null
+  })
+}
+
+// Short, actionable error text for the banner.
+function userMessage(err) {
+  switch (classifyError(err)) {
+    case 'auth': return 'API Key 无效或没有权限，请在设置里检查'
+    case 'network': return '网络连接失败，请检查网络后重试'
+    case 'transient': return 'OpenAI 服务暂时不稳定，请稍后重试'
+    default: return err?.message || '未知错误'
   }
 }
 

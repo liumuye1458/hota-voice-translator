@@ -1,39 +1,64 @@
-// src/services/openai.js — v2.0
+// src/services/openai.js — v3.0
 //
-// Pure async wrappers around OpenAI HTTP API.
-// Every function accepts an AbortSignal so the caller can cancel.
+// Pure async wrappers around the OpenAI HTTP API. Every function accepts an
+// AbortSignal. Errors are thrown as OpenAIHTTPError carrying {status, code}
+// so core/modelRouter.js can classify them (PRD-002 §5.1).
 //
-// CRITICAL: these functions know NOTHING about state, sessions, or React.
-// They are pure I/O. The session manager owns the abort controllers.
+// TTS lives in core/ttsProvider.js (ADR-004).
+
+import { DEFAULT_TRANSLATION_MODEL, DEFAULT_STT_MODEL } from '../core/modelRouter.js'
 
 const OPENAI_API = 'https://api.openai.com/v1'
+
+export class OpenAIHTTPError extends Error {
+  constructor({ status, code = null, param = null, message, model }) {
+    super(message)
+    this.name = 'OpenAIHTTPError'
+    this.status = status
+    this.code = code
+    this.param = param
+    this.model = model
+  }
+}
+
+async function throwFromResponse(res, model, label) {
+  const data = await res.json().catch(() => ({}))
+  throw new OpenAIHTTPError({
+    status: res.status,
+    code: data.error?.code || null,
+    param: data.error?.param || null,
+    message: data.error?.message || `${label} HTTP ${res.status}`,
+    model
+  })
+}
+
+// GPT-6 models reject a non-default temperature ("Only the default (1) value
+// is supported"). Found by the 2026-10-08 golden eval.
+function supportsTemperature(model) {
+  return !/^gpt-6/.test(model)
+}
 
 // ===== Translation =====================================================
 
 /**
- * Translate text from sourceLang to targetLang via gpt-4o.
+ * Translate text from sourceLang to targetLang.
  *
- * Includes output-language sanity check: if the result is not in the
- * expected target language, retries ONCE with an emphatic prompt prefix.
+ * Includes an output-language sanity check: if the result is not in the
+ * expected target language, retries ONCE (same model) with an emphatic prefix.
+ * Model fallback across models is NOT done here — see core/modelRouter.js.
  *
- * @param {string} text
- * @param {string} sourceLang — "Chinese (Simplified, 简体中文)" form
- * @param {string} targetLang — same form
- * @param {string} apiKey
- * @param {string} customInstructions — optional company-specific rules
- * @param {AbortSignal} signal
  * @returns {Promise<string>}
  */
-export async function translateText(text, sourceLang, targetLang, apiKey, customInstructions = '', signal) {
-  let result = await callTranslateOnce(text, sourceLang, targetLang, apiKey, customInstructions, 0, signal)
+export async function translateText(text, sourceLang, targetLang, apiKey, customInstructions = '', signal, model = DEFAULT_TRANSLATION_MODEL) {
+  let result = await callTranslateOnce(text, sourceLang, targetLang, apiKey, customInstructions, 0, signal, model)
   if (isWrongLanguage(result, targetLang)) {
     console.warn('[translate] output language mismatch, retrying:', result)
-    result = await callTranslateOnce(text, sourceLang, targetLang, apiKey, customInstructions, 1, signal)
+    result = await callTranslateOnce(text, sourceLang, targetLang, apiKey, customInstructions, 1, signal, model)
   }
   return result
 }
 
-async function callTranslateOnce(text, sourceLang, targetLang, apiKey, customInstructions, attempt, signal) {
+function buildSystemPrompt(sourceLang, targetLang, customInstructions, attempt) {
   let systemPrompt = `Translate the user's message from ${sourceLang} to ${targetLang}.
 
 Rules:
@@ -49,7 +74,10 @@ Rules:
   if (attempt > 0) {
     systemPrompt = `THE OUTPUT MUST BE WRITTEN IN ${targetLang.toUpperCase()}. NOT ENGLISH. NOT ${sourceLang.toUpperCase()}. ONLY ${targetLang.toUpperCase()}.\n\n` + systemPrompt
   }
+  return systemPrompt
+}
 
+async function callTranslateOnce(text, sourceLang, targetLang, apiKey, customInstructions, attempt, signal, model) {
   const res = await fetch(`${OPENAI_API}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -57,19 +85,16 @@ Rules:
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
-      temperature: 0,
+      model,
+      ...(supportsTemperature(model) ? { temperature: 0 } : {}),
       messages: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: buildSystemPrompt(sourceLang, targetLang, customInstructions, attempt) },
         { role: 'user', content: text }
       ]
     }),
     signal
   })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message || `Translation HTTP ${res.status}`)
-  }
+  if (!res.ok) await throwFromResponse(res, model, 'Translation')
   const data = await res.json()
   return data.choices[0].message.content.trim()
 }
@@ -96,85 +121,58 @@ function isWrongLanguage(result, targetLang) {
   return false
 }
 
-// ===== TTS =============================================================
+// ===== Model probe (Settings "检测可用模型") ============================
 
 /**
- * Synthesize one text chunk to an MP3 blob URL.
- *
- * NB: returns a blob URL — caller is responsible for revoking it
- * (typically via Session.trackBlobUrl() which auto-revokes on session.cancel()).
- *
- * @param {string} text — must be ≤ 4096 chars (chunker ensures this)
- * @param {string} voice — 'nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'
- * @param {string} apiKey
- * @param {AbortSignal} signal
- * @returns {Promise<string>} blob URL
+ * Minimal chat call to check whether this key can use a model.
+ * @returns {Promise<{ok: boolean, status: number|null, message: string}>}
  */
-export async function synthesizeSpeech(text, voice, apiKey, signal) {
-  const res = await fetch(`${OPENAI_API}/audio/speech`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini-tts',
-      input: text,
-      voice: voice || 'nova',
-      response_format: 'mp3'
-    }),
-    signal
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message || `TTS HTTP ${res.status}`)
+export async function probeModel(model, apiKey, signal) {
+  try {
+    const res = await fetch(`${OPENAI_API}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: 'ok' }] }),
+      signal
+    })
+    if (res.ok) return { ok: true, status: res.status, message: '' }
+    const data = await res.json().catch(() => ({}))
+    return { ok: false, status: res.status, message: data.error?.message || `HTTP ${res.status}` }
+  } catch (err) {
+    return { ok: false, status: null, message: err?.message || 'network error' }
   }
-  const blob = await res.blob()
-  return URL.createObjectURL(blob)
 }
 
-// ===== STT (Whisper / gpt-4o-transcribe) ===============================
+// ===== STT =============================================================
 
 /**
- * Transcribe an audio blob using gpt-4o-transcribe.
+ * Transcribe an audio blob.
  *
- * @param {Blob} audioBlob
- * @param {string} mimeType — e.g. 'audio/webm;codecs=opus' (for filename hint)
- * @param {string} lang — ISO 639-1 ('id', 'zh', 'en', ...). Empty string = autodetect.
- * @param {string} prompt — bias text (names, jargon, currency formats, etc.)
- * @param {string} apiKey
- * @param {AbortSignal} signal
+ * @param {string} lang — ISO 639-1 ('id', 'zh', ...). Empty = autodetect.
+ * @param {string} prompt — bias text (names, jargon, currency formats)
+ * @param {string} model — 'gpt-4o-transcribe' | 'gpt-transcribe'
  * @returns {Promise<string>}
  */
-export async function transcribeAudio(audioBlob, mimeType, lang, prompt, apiKey, signal) {
-  if (!audioBlob || audioBlob.size < 200) {
-    return '' // No meaningful audio
-  }
-  // Pick a filename hint that hints at format (OpenAI uses extension for format detection)
-  const ext = mimeTypeToExt(mimeType)
-  const filename = `audio.${ext}`
+export async function transcribeAudio(audioBlob, mimeType, lang, prompt, apiKey, signal, model = DEFAULT_STT_MODEL) {
+  if (!audioBlob || audioBlob.size < 200) return ''
 
   const formData = new FormData()
-  formData.append('file', audioBlob, filename)
-  formData.append('model', 'gpt-4o-transcribe')
+  formData.append('file', audioBlob, `audio.${mimeTypeToExt(mimeType)}`)
+  formData.append('model', model)
   if (lang) formData.append('language', lang)
   if (prompt && prompt.trim()) formData.append('prompt', prompt.trim())
-  // Note: gpt-4o-transcribe doesn't currently support `stream: true` for browser fetch
-  // (would need SSE handling). Plain JSON response is fine for v2.0.
 
   const res = await fetch(`${OPENAI_API}/audio/transcriptions`, {
     method: 'POST',
-    headers: {
-      // NB: do NOT set Content-Type — let fetch set the multipart boundary
-      'Authorization': `Bearer ${apiKey}`
-    },
+    // No Content-Type: fetch sets the multipart boundary
+    headers: { 'Authorization': `Bearer ${apiKey}` },
     body: formData,
     signal
   })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message || `Transcribe HTTP ${res.status}`)
-  }
+  if (!res.ok) await throwFromResponse(res, model, 'Transcribe')
   const data = await res.json()
   return (data.text || '').trim()
 }
@@ -188,7 +186,3 @@ function mimeTypeToExt(mimeType) {
   if (mimeType.includes('ogg')) return 'ogg'
   return 'webm'
 }
-
-// ===== Aliases / re-exports (compat with v1 modules during cutover) ====
-
-export { transcribeAudio as transcribe }

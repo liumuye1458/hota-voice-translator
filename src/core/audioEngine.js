@@ -67,14 +67,14 @@ class AudioEngine {
   /**
    * Play a chunk queue for a session.
    *
-   * @param {Object} session — Session instance (must have .id, .cancelled, .trackBlobUrl, .newTtsQueue)
+   * @param {Object} session — Session instance (.id, .cancelled, .trackRevoker, .newTtsQueue)
    * @param {string[]} chunks — array of text chunks (from sentenceChunker)
    * @param {string} voice — TTS voice id
-   * @param {Function} synthesizeTTS — async (text, voice, signal) => blobUrl
+   * @param {{synthesize: Function, name: string}} provider — TTS provider (ADR-004)
    * @param {Function} onEvent — (eventType, payload) => void
    * @returns {Promise<void>} resolves when queue finishes (or aborts)
    */
-  async play(session, chunks, voice, synthesizeTTS, onEvent) {
+  async play(session, chunks, voice, provider, onEvent) {
     if (!chunks || chunks.length === 0) {
       onEvent('SPEAK_DONE', { sessionId: session.id, ttsQueueId: -1 })
       return
@@ -88,8 +88,26 @@ class AudioEngine {
 
     const { ttsQueueId, signal } = session.newTtsQueue()
 
-    // Prefetch buffer: holds the next chunk's blob URL while current is playing
-    let prefetched = null
+    // Request chunk i from the provider. Only kind='blob-url' is supported in v3.0;
+    // anything else fails loudly rather than being played wrong.
+    const synth = (i) => provider.synthesize({
+      text: chunks[i],
+      voice,
+      sessionId: session.id,
+      ttsQueueId,
+      chunkIndex: i
+    }, signal).then(result => {
+      if (result?.kind !== 'blob-url') {
+        try { result?.revoke?.() } catch (e) { /* ignore */ }
+        throw new Error(`unsupported TTS result kind: ${result?.kind}`)
+      }
+      session.trackRevoker(result.revoke)
+      return result
+    })
+
+    // Promise for the next chunk, started while the current one plays.
+    // Holding the promise (not the resolved URL) means we never request a chunk twice.
+    let pending = null
 
     for (let i = 0; i < chunks.length; i++) {
       if (session.cancelled || signal.aborted) return
@@ -107,50 +125,46 @@ class AudioEngine {
         totalChunks: chunks.length
       })
 
-      // Get this chunk's blob (use prefetched if available)
-      let blobUrl = prefetched
-      prefetched = null
-      if (!blobUrl) {
-        try {
-          blobUrl = await synthesizeTTS(chunks[i], voice, signal)
-          session.trackBlobUrl(blobUrl)
-        } catch (err) {
-          if (signal.aborted || session.cancelled) return
-          onEvent('CHUNK_FAILED', {
-            sessionId: session.id,
-            ttsQueueId,
-            chunkIndex: i,
-            error: err?.message || 'tts-fetch-failed'
-          })
-          continue
-        }
-      }
+      const current = pending || synth(i)
+      pending = null
 
-      // Kick off prefetch of next chunk (parallel with current playback)
-      if (i + 1 < chunks.length && !signal.aborted) {
-        synthesizeTTS(chunks[i + 1], voice, signal)
-          .then(url => {
-            if (!signal.aborted && !session.cancelled) {
-              session.trackBlobUrl(url)
-              prefetched = url
-            }
-          })
-          .catch(() => { /* swallowed; will retry on next iteration */ })
-      }
-
-      // Play current chunk
+      let result
       try {
-        await this._playBlob(blobUrl, signal)
+        result = await current
       } catch (err) {
         if (signal.aborted || session.cancelled) return
-        if (err?.code === 'autoplay-rejected') {
-          onEvent('TAP_TO_PLAY', { sessionId: session.id, ttsQueueId })
-          return
-        }
         onEvent('CHUNK_FAILED', {
           sessionId: session.id,
           ttsQueueId,
           chunkIndex: i,
+          code: err?.status ? `tts-http-${err.status}` : 'tts-failed',
+          error: err?.message || 'tts-fetch-failed'
+        })
+        continue
+      }
+
+      if (i + 1 < chunks.length && !signal.aborted) {
+        pending = synth(i + 1)
+        pending.catch(() => { /* surfaced when awaited next iteration */ })
+      }
+
+      try {
+        await this._playBlob(result.url, signal)
+        result.revoke()
+      } catch (err) {
+        if (signal.aborted || session.cancelled) return
+        if (err?.code === 'autoplay-rejected') {
+          // Keep the URL alive: resumePending() replays the same src.
+          // session.cancel() revokes it later via trackRevoker.
+          onEvent('TAP_TO_PLAY', { sessionId: session.id, ttsQueueId })
+          return
+        }
+        result.revoke()
+        onEvent('CHUNK_FAILED', {
+          sessionId: session.id,
+          ttsQueueId,
+          chunkIndex: i,
+          code: 'playback-failed',
           error: err?.message || 'playback-failed'
         })
         continue

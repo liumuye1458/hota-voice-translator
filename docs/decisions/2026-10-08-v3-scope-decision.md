@@ -51,6 +51,17 @@ approved_at: 2026-10-08
 - [ ] 评审 approved 后开 `v3-rebuild` 分支动工
 - [ ] 实施完成后合并到 main，tag `stable-v3.0`
 
+## Addendum：上线默认翻译模型（2026-10-08，eval 之后）
+- 实测 Luna/Mini/4o 金标准均 20/20；Luna 质量最好（术语、口语），但翻译环节约 1.9 s，比 Mini 慢约 0.9 s/轮（与调研"Luna 更快"的假设相反，见 PRD-002 §10.2）。
+- Claude 推荐保持 Luna 为默认（CEO 一贯以翻译准确度为最高优先级），可在设置中随时切到 Mini。
+- **CEO 决定：A —— 默认 Luna**。
+
+## Addendum：API Key 暴露风险（2026-10-08）
+- Day 0 验证时 CEO 把 OpenAI API Key 直接贴进了与 Claude 的对话。
+- Claude 建议作废并重建 Key。
+- **CEO 决定不更换**：该 Key 被多人共用，更换影响面大，CEO 接受泄露风险。
+- 记录在此作为异议留痕（CONTRIBUTING.md「保留异议」条款），后续不再重复提醒。
+
 ## Related
 - PRD-002（v3.0 Model Refresh）
 - ADR-004（TTS Provider Abstraction）
