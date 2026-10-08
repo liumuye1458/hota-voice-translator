@@ -148,6 +148,16 @@ stable-v2.0 的模型选型基于 2026 年 4 月信息。2026 Q3-Q4 OpenAI 栈�
 
 **责任人**：Claude（提议）→ CEO（授权运行测试调用）
 
+**结果（2026-10-08，已完成）**：
+
+| 模型 | HTTP | 返回 model 字段 | 输出（"明天八点开播"） |
+|------|------|----------------|---------------------|
+| `gpt-6-luna` | 200 | `gpt-6-luna` | Besok siaran dimulai pukul delapan. |
+| `gpt-5.4-mini` | 200 | `gpt-5.4-mini-2026-03-17` | Besok siaran langsung pukul delapan. |
+
+结论：CEO 账户支持 Luna，按原计划 Luna 为默认、Mini 为粘性降级目标。Day 0 门禁通过。
+备注：单样本里 Mini 的 "siaran langsung"（直播）比 Luna 的 "siaran dimulai"（节目开始）更贴合直播语境，Day 1 的 20 条金标准对比需重点看这一点。
+
 ### Q2：`gpt-transcribe` vs `gpt-4o-transcribe` 的实际差异？【BLOCKING — Day 1 之后必做】
 
 **最低测试标准**：
