@@ -50,6 +50,7 @@ export function isStale(state, event) {
     case 'TRANSCRIPT_READY':
       return event.transcribeAttemptId !== state.session.attemptIds.transcribe
     case 'TRANSLATION_READY':
+    case 'TEXT_DONE':
       return event.translateAttemptId !== state.session.attemptIds.translate
     case 'CHUNK_QUEUED':
     case 'CHUNK_PLAYING':
@@ -166,6 +167,13 @@ export function reducer(state, event) {
         speakProgress: { chunkIndex: 0, total: event.chunkCount || 1 },
         lastEventLog: log
       }
+
+    case 'TEXT_DONE':
+      // Translation shown without speech (DEC-2026-10-12-text-input-auto-direction)
+      if (state.status !== STATES.TRANSLATING) {
+        return { ...state, lastEventLog: log }
+      }
+      return { ...state, status: STATES.IDLE, session: null, speakProgress: null, lastEventLog: log }
 
     case 'CHUNK_QUEUED':
     case 'CHUNK_PLAYING':

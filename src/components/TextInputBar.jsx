@@ -46,7 +46,7 @@ export default function TextInputBar({ value, onChange, onSend, disabled, refocu
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="中文输入（Ctrl+Win 语音 · 敲左Shift或回车发送）"
+        placeholder="输入中文，或粘贴外文翻成中文（Ctrl+Win 语音 · 敲左Shift或回车发送）"
         disabled={disabled}
         autoComplete="off"
         spellCheck={false}

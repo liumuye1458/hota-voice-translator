@@ -37,6 +37,25 @@ test('START transitions to translating for text input', () => {
   assert.equal(next.status, STATES.TRANSLATING)
 })
 
+test('TEXT_DONE from current translate attempt → idle without speaking', () => {
+  const session = makeSession({ direction: 'id→zh', inputMode: 'text' })
+  let s = reducer(initialState, { type: 'START', session, inputMode: 'text' })
+  const { attemptId } = session.newTranslateAttempt()
+  s = reducer(s, { type: 'TEXT_DONE', sessionId: session.id, translateAttemptId: attemptId })
+  assert.equal(s.status, STATES.IDLE)
+  assert.equal(s.session, null)
+  assert.equal(s.speakProgress, null)
+})
+
+test('TEXT_DONE with stale translateAttemptId is ignored', () => {
+  const session = makeSession({ direction: 'id→zh', inputMode: 'text' })
+  let s = reducer(initialState, { type: 'START', session, inputMode: 'text' })
+  const { attemptId } = session.newTranslateAttempt()
+  session.newTranslateAttempt()
+  s = reducer(s, { type: 'TEXT_DONE', sessionId: session.id, translateAttemptId: attemptId })
+  assert.equal(s.status, STATES.TRANSLATING)
+})
+
 test('STOP with nextPhase=transcribing → transcribing', () => {
   const session = makeSession()
   let s = reducer(initialState, { type: 'START', session, inputMode: 'voice' })

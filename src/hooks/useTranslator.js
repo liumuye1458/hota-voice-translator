@@ -13,6 +13,7 @@ import { reducer, initialState, STATES, shouldAutoReset } from '../core/translat
 import { sessionManager } from '../core/sessionManager.js'
 import { audioEngine } from '../core/audioEngine.js'
 import { split as splitChunks } from '../core/sentenceChunker.js'
+import { detectTextDirection } from '../core/textDirection.js'
 import { translateText, transcribeAudio } from '../services/openai.js'
 import { OpenAIStandardTTS } from '../core/ttsProvider.js'
 import {
@@ -39,7 +40,7 @@ const MIME_CANDIDATES = [
  *
  * Returns:
  *   state — { status, session, speakProgress, lastError, ... }
- *   sendText(text) — text-mode translation (Chinese → target)
+ *   sendText(text) — text-mode translation, direction auto-detected from content
  *   startVoice(side) — begin voice recording (side: 'left' | 'right')
  *   stopVoice() — release; process recorded audio
  *   cancelVoice() — cancel current recording without processing
@@ -176,7 +177,10 @@ export function useTranslator(opts) {
   }, [forceReset])
 
   // ====================================================================
-  // TEXT mode — Chinese → target
+  // TEXT mode — direction auto-detected from content
+  // (DEC-2026-10-12-text-input-auto-direction)
+  //   Chinese → target: translate + speak (unchanged)
+  //   other   → Chinese: translate, show only (🔊 on the bubble to listen)
   // ====================================================================
   const sendText = useCallback(async (text) => {
     const cleaned = (text || '').trim()
@@ -186,16 +190,19 @@ export function useTranslator(opts) {
       return
     }
 
+    const direction = detectTextDirection(cleaned)
+    const toChinese = direction === 'id→zh'
+
     // Create new session (auto-cancels prior)
-    const session = sessionManager.create({ direction: 'zh→id', inputMode: 'text' })
+    const session = sessionManager.create({ direction, inputMode: 'text' })
 
     dispatch({ type: 'START', session, inputMode: 'text', sessionId: session.id })
     startMetrics(session, { input: 'text', model_stt: null })
 
     // Translate
     const { attemptId: translateAttemptId, signal: tlSignal } = session.newTranslateAttempt()
-    const sourceLangName = getLangName(SOURCE_LANG.code)
-    const targetLangName = getLangName(targetLangCode)
+    const sourceLangName = getLangName(toChinese ? targetLangCode : SOURCE_LANG.code)
+    const targetLangName = getLangName(toChinese ? SOURCE_LANG.code : targetLangCode)
 
     let translation
     try {
@@ -215,6 +222,20 @@ export function useTranslator(opts) {
       return
     }
     if (!translation || !sessionManager.isCurrent(session)) return
+
+    if (toChinese) {
+      onTranslationDone?.({
+        originalText: cleaned,
+        translatedText: translation,
+        direction,
+        fromLang: targetLangCode,
+        toLang: 'zh'
+      })
+      dispatch({ type: 'TEXT_DONE', sessionId: session.id, translateAttemptId })
+      logTurn(session, 'ok-silent')
+      sessionManager.dispose(session)
+      return
+    }
 
     // Chunk + dispatch TRANSLATION_READY
     const chunks = splitChunks(translation)
