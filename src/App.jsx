@@ -1,4 +1,4 @@
-// src/App.jsx — v3.0
+// src/App.jsx — v4.0
 //
 // Thin composition root. All translation state owned by useTranslator hook.
 // This component just:
@@ -13,6 +13,7 @@ import { LANGUAGES, SOURCE_LANG, isMobileDevice } from './config/languages'
 import { audioEngine } from './core/audioEngine'
 import { DEFAULT_TRANSLATION_MODEL, DEFAULT_STT_MODEL, TRANSLATION_MODELS } from './core/modelRouter'
 import { probeModel } from './services/openai'
+import { warmCapture } from './core/realtimeStt'
 import StatusBar from './components/StatusBar'
 import ConversationView from './components/ConversationView'
 import DualVoiceButton from './components/DualVoiceButton'
@@ -22,9 +23,22 @@ import TextInputBar from './components/TextInputBar'
 const LS_SETTINGS = 'vt_settings'
 const LS_MESSAGES = 'vt_messages'
 
+// v4.0 changed the recommended models (PRD-003). Model choices saved under
+// v3 are dropped once so every user starts on the new defaults; everything
+// else (key, language, voice, vocabulary, rules) is kept.
+const SETTINGS_VERSION = 4
+
 function loadSettings() {
-  try { return JSON.parse(localStorage.getItem(LS_SETTINGS)) || {} }
+  let s
+  try { s = JSON.parse(localStorage.getItem(LS_SETTINGS)) || {} }
   catch { return {} }
+  if ((s.settingsVersion || 0) < SETTINGS_VERSION) {
+    delete s.translationModel
+    delete s.sttModel
+    s.settingsVersion = SETTINGS_VERSION
+    try { localStorage.setItem(LS_SETTINGS, JSON.stringify(s)) } catch { /* ignore */ }
+  }
+  return s
 }
 function loadMessages() {
   try { return JSON.parse(localStorage.getItem(LS_MESSAGES)) || [] }
@@ -152,6 +166,7 @@ export default function App() {
     const unlock = () => {
       if (cancelled) return
       audioEngine.unlock()
+      warmCapture()   // realtime STT mic context (ADR-005)
     }
     document.addEventListener('pointerdown', unlock, { once: true })
     document.addEventListener('keydown', unlock, { once: true })

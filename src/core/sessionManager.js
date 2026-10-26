@@ -40,7 +40,8 @@ export class Session {
       mediaStream: null,
       mediaRecorder: null,
       currentAudioPlayback: null,
-      revokers: new Set()          // TTS result.revoke() functions (ADR-004)
+      revokers: new Set(),         // TTS result.revoke() functions (ADR-004)
+      cleanups: new Set()          // e.g. realtime STT socket/AudioContext (ADR-005)
     }
     // Per-turn observability record (PRD-002 §6), filled in by useTranslator
     this.metrics = {}
@@ -101,6 +102,11 @@ export class Session {
     if (typeof revoke === 'function') this.resources.revokers.add(revoke)
   }
 
+  // Register a teardown function to run on cancel() (idempotent functions only).
+  addCleanup(fn) {
+    if (typeof fn === 'function') this.resources.cleanups.add(fn)
+  }
+
   cancel(reason = 'unknown') {
     if (this.cancelled) return
     this.cancelled = true
@@ -150,6 +156,12 @@ export class Session {
       try { revoke() } catch (e) { /* ignore */ }
     }
     this.resources.revokers.clear()
+
+    // 6. Other registered teardowns (realtime STT)
+    for (const fn of this.resources.cleanups) {
+      try { fn() } catch (e) { /* ignore */ }
+    }
+    this.resources.cleanups.clear()
   }
 }
 

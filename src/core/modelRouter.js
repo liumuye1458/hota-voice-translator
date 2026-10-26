@@ -3,19 +3,35 @@
 // Error classification + sticky model fallback for translation calls.
 // Pure module: no React, no DOM, no fetch. Unit-tested in __tests__/modelRouter.test.js.
 
+// `params` are sent with every chat completion for that model (PRD-003 §3.1).
+// GPT-5.x/6 default to reasoning on every call (Luna: medium, ~1 s slower);
+// temperature is only accepted once reasoning_effort is 'none'.
+// service_tier 'priority' (= Fast mode): Luna first token p50 1.14 → 0.92 s at 2×
+// a very low price; dropped automatically if the account rejects it (services/openai.js).
 export const TRANSLATION_MODELS = Object.freeze([
-  { id: 'gpt-6-luna', label: 'GPT-6 Luna（默认）' },
-  { id: 'gpt-5.4-mini', label: 'GPT-5.4 mini' },
-  { id: 'gpt-4o', label: 'GPT-4o（v2 旧版）' }
+  { id: 'gpt-6-luna', label: 'GPT-6 Luna 快速（默认）', params: { reasoning_effort: 'none', temperature: 0, service_tier: 'priority' } },
+  { id: 'gpt-5.4-mini', label: 'GPT-5.4 mini（最快）', params: { reasoning_effort: 'none', temperature: 0, service_tier: 'priority' } },
+  { id: 'gpt-4o', label: 'GPT-4o（v2 旧版）', params: { temperature: 0 } }
 ])
 
+// realtime = stream mic audio while the button is held (ADR-005);
+// the others upload the whole clip after release (v3 behaviour, also the fallback).
 export const STT_MODELS = Object.freeze([
-  { id: 'gpt-4o-transcribe', label: 'gpt-4o-transcribe（默认）' },
-  { id: 'gpt-transcribe', label: 'gpt-transcribe（新，待 A/B 验证）' }
+  { id: 'realtime', label: '实时识别 gpt-live-transcribe（默认，最快）' },
+  { id: 'gpt-4o-transcribe', label: 'gpt-4o-transcribe（松手后上传）' },
+  { id: 'gpt-transcribe', label: 'gpt-transcribe（松手后上传）' }
 ])
 
 export const DEFAULT_TRANSLATION_MODEL = 'gpt-6-luna'
-export const DEFAULT_STT_MODEL = 'gpt-4o-transcribe'
+export const DEFAULT_STT_MODEL = 'realtime'
+export const REALTIME_STT_MODEL = 'gpt-live-transcribe'
+// Upload model used when realtime fails or isn't selected
+export const UPLOAD_STT_FALLBACK = 'gpt-4o-transcribe'
+
+/** Extra request params for a translation model (unknown models get none). */
+export function translationParams(model) {
+  return TRANSLATION_MODELS.find(m => m.id === model)?.params || {}
+}
 
 // Only these models have an automatic fallback target.
 const FALLBACK_OF = Object.freeze({

@@ -15,6 +15,11 @@
 //   SPEAK_PROGRESS   { sessionId, ttsQueueId, chunkIndex, totalChunks }
 //   SPEAK_DONE       { sessionId, ttsQueueId }
 //   TAP_TO_PLAY      { sessionId, ttsQueueId } — Safari autoplay rejected; UI must show tap-to-play
+//
+// v4.0: CHUNK_PLAYING fires once the chunk's audio is ready (just before it
+// plays), and totalChunks is null while a streaming ChunkFeed is still open.
+
+import { ChunkFeed } from './chunkFeed.js'
 
 class AudioEngine {
   constructor() {
@@ -68,7 +73,8 @@ class AudioEngine {
    * Play a chunk queue for a session.
    *
    * @param {Object} session — Session instance (.id, .cancelled, .trackRevoker, .newTtsQueue)
-   * @param {string[]} chunks — array of text chunks (from sentenceChunker)
+   * @param {string[]|ChunkFeed} chunks — text chunks; a ChunkFeed may still be
+   *   growing while the translation streams (PRD-003 §3.1)
    * @param {string} voice — TTS voice id
    * @param {{synthesize: Function, name: string}} provider — TTS provider (ADR-004)
    * @param {Function} onEvent — (eventType, payload) => void
@@ -79,6 +85,7 @@ class AudioEngine {
       onEvent('SPEAK_DONE', { sessionId: session.id, ttsQueueId: -1 })
       return
     }
+    const feed = Array.isArray(chunks) ? ChunkFeed.from(chunks) : chunks
 
     // Stop anything currently playing (one queue at a time)
     this._stopPlayback()
@@ -88,10 +95,10 @@ class AudioEngine {
 
     const { ttsQueueId, signal } = session.newTtsQueue()
 
-    // Request chunk i from the provider. Only kind='blob-url' is supported in v3.0;
+    // Request chunk i from the provider. Only kind='blob-url' is supported;
     // anything else fails loudly rather than being played wrong.
-    const synth = (i) => provider.synthesize({
-      text: chunks[i],
+    const synth = (i, text) => provider.synthesize({
+      text,
       voice,
       sessionId: session.id,
       ttsQueueId,
@@ -105,34 +112,45 @@ class AudioEngine {
       return result
     })
 
-    // Promise for the next chunk, started while the current one plays.
+    // Wait for chunk i's text, then synthesize it. Never throws:
+    // resolves {end} | {result} | {err}.
+    const fetchItem = async (i) => {
+      const text = await feed.get(i, signal)
+      if (text == null) return { end: true }
+      try {
+        return { result: await synth(i, text) }
+      } catch (err) {
+        return { err }
+      }
+    }
+
+    // Item for the next chunk, started while the current one plays.
     // Holding the promise (not the resolved URL) means we never request a chunk twice.
     let pending = null
 
-    for (let i = 0; i < chunks.length; i++) {
+    for (let i = 0; ; i++) {
       if (session.cancelled || signal.aborted) return
+
+      const item = await (pending || fetchItem(i))
+      pending = null
+      if (session.cancelled || signal.aborted) return
+      if (item.end) break
 
       onEvent('CHUNK_PLAYING', {
         sessionId: session.id,
         ttsQueueId,
         chunkIndex: i,
-        totalChunks: chunks.length
+        totalChunks: feed.total
       })
       onEvent('SPEAK_PROGRESS', {
         sessionId: session.id,
         ttsQueueId,
         chunkIndex: i,
-        totalChunks: chunks.length
+        totalChunks: feed.total
       })
 
-      const current = pending || synth(i)
-      pending = null
-
-      let result
-      try {
-        result = await current
-      } catch (err) {
-        if (signal.aborted || session.cancelled) return
+      if (item.err) {
+        const err = item.err
         onEvent('CHUNK_FAILED', {
           sessionId: session.id,
           ttsQueueId,
@@ -142,11 +160,9 @@ class AudioEngine {
         })
         continue
       }
+      const result = item.result
 
-      if (i + 1 < chunks.length && !signal.aborted) {
-        pending = synth(i + 1)
-        pending.catch(() => { /* surfaced when awaited next iteration */ })
-      }
+      pending = fetchItem(i + 1)
 
       try {
         await this._playBlob(result.url, signal)

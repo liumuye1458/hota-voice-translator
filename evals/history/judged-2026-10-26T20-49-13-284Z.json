@@ -1,0 +1,1104 @@
+{
+ "ranAt": "2026-10-26T20:48:52.375Z",
+ "judge": "gpt-6-sol",
+ "reps": 3,
+ "set": "all",
+ "models": {
+  "gpt-6-luna": {
+   "summary": {
+    "dev": {
+     "avg": 4.96,
+     "critical": 0,
+     "n": 72
+    },
+    "holdout": {
+     "avg": 4.53,
+     "critical": 0,
+     "n": 36
+    }
+   },
+   "rows": [
+    {
+     "id": "h01",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1375,
+     "out": "Bulan ini GMV Xiaoya mencapai 85 juta Rupiah. Komisinya dihitung 3%, transfer ke rekeningnya sebelum Jumat.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta tepat dan terjemahannya alami."
+    },
+    {
+     "id": "h01",
+     "set": "dev",
+     "rep": 1,
+     "ms": 936,
+     "out": "Bulan ini GMV Xiaoya mencapai 85 juta Rupiah. Komisinya dihitung 3%, transfer ke rekeningnya sebelum Jumat.",
+     "score": 5,
+     "critical": false,
+     "why": "Jumlah, persentase komisi, nama, dan batas waktu transfer tepat."
+    },
+    {
+     "id": "h01",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1319,
+     "out": "Bulan ini GMV Xiaoya mencapai 85 juta Rupiah. Komisinya dihitung 3%, transfer ke rekeningnya sebelum Jumat.",
+     "score": 5,
+     "critical": false,
+     "why": "Nominal, komisi, tenggat, dan penerima tersampaikan dengan tepat."
+    },
+    {
+     "id": "h02",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1493,
+     "out": "Besok shift pagi mulai live pukul 10. Terlambat sekali dipotong gaji 500 ribu Rupiah.",
+     "score": 5,
+     "critical": false,
+     "why": "Waktu siaran dan potongan Rp500.000 untuk sekali terlambat tersampaikan dengan tepat."
+    },
+    {
+     "id": "h02",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1274,
+     "out": "Besok shift pagi mulai live pukul 10. Terlambat sekali dipotong gaji 500 ribu Rupiah.",
+     "score": 5,
+     "critical": false,
+     "why": "Waktu siaran dan potongan untuk sekali terlambat tersampaikan tepat."
+    },
+    {
+     "id": "h02",
+     "set": "dev",
+     "rep": 2,
+     "ms": 951,
+     "out": "Besok shift pagi mulai live pukul 10. Terlambat sekali dipotong gaji 500 ribu Rupiah.",
+     "score": 5,
+     "critical": false,
+     "why": "Waktu siaran dan potongan untuk sekali terlambat diterjemahkan dengan tepat."
+    },
+    {
+     "id": "h03",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1439,
+     "out": "Jumlah penonton live-mu cuma 2.000, conversion rate-nya bahkan belum 1%. Kamu menahan order terlalu lama sampai penontonnya kabur semua.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta tepat; nada kritik tetap tajam dan terjemahan alami."
+    },
+    {
+     "id": "h03",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1216,
+     "out": "Jumlah penonton di live ini cuma 2.000, conversion rate-nya bahkan belum 1%. Kamu menahan order terlalu lama sampai penontonnya kabur semua.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta tepat; nada kritik tetap tegas."
+    },
+    {
+     "id": "h03",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1247,
+     "out": "Jumlah penonton live-mu kali ini cuma 2.000, conversion rate-nya bahkan tidak sampai 1%. Kamu menahan order terlalu lama sampai penontonnya kabur semua.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta tepat; nada kritiknya tetap tajam."
+    },
+    {
+     "id": "h04",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1898,
+     "out": "Anggaran iklan berbayar minggu ini dipotong setengah dulu. Jangan terima brand yang tidak bisa diajak negosiasi soal slot fee.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta dan nada instruksi tersampaikan dengan tepat."
+    },
+    {
+     "id": "h04",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1783,
+     "out": "Anggaran iklan berbayar minggu ini dipotong setengah dulu. Kalau slot fee mereknya tidak bisa dinegosiasikan, jangan diterima.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta dan instruksi tersampaikan dengan tepat."
+    },
+    {
+     "id": "h04",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1136,
+     "out": "Anggaran iklan berbayar minggu ini dipotong setengah dulu. Kalau slot fee mereknya tidak bisa dinegosiasikan, jangan diterima.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta dan instruksi tersampaikan dengan akurat dan alami."
+    },
+    {
+     "id": "h05",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1328,
+     "out": "Bukan berarti pekerjaanmu buruk, maksudku kamu tidak boleh terus-terusan izin seenaknya seperti ini.",
+     "score": 5,
+     "critical": false,
+     "why": "Negasi, larangan izin sembarangan, dan nada teguran tersampaikan dengan tepat."
+    },
+    {
+     "id": "h05",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1112,
+     "out": "Bukan berarti pekerjaanmu buruk, maksudku kamu tidak bisa terus-terusan izin seenaknya seperti ini.",
+     "score": 4,
+     "critical": false,
+     "why": "Makna tersampaikan, tetapi 'tidak bisa' kurang tegas daripada 'tidak boleh'."
+    },
+    {
+     "id": "h05",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1114,
+     "out": "Bukan berarti pekerjaanmu buruk, maksudku kamu tidak bisa terus-terusan izin seenaknya seperti ini.",
+     "score": 4,
+     "critical": false,
+     "why": "Makna utama tepat, tetapi penyangkalan awal sedikit bergeser dari ‘bukan bilang’."
+    },
+    {
+     "id": "h06",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1091,
+     "out": "120 juta",
+     "score": 5,
+     "critical": false,
+     "why": "Angka 120 juta tepat."
+    },
+    {
+     "id": "h06",
+     "set": "dev",
+     "rep": 1,
+     "ms": 942,
+     "out": "120 juta",
+     "score": 5,
+     "critical": false,
+     "why": "120 juta tepat setara dengan 一点二亿."
+    },
+    {
+     "id": "h06",
+     "set": "dev",
+     "rep": 2,
+     "ms": 835,
+     "out": "120 juta",
+     "score": 5,
+     "critical": false,
+     "why": "120 juta tepat sama dengan 一点二亿."
+    },
+    {
+     "id": "h07",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1049,
+     "out": "THR dibayarkan sebesar satu bulan gaji pokok, dan mulai bulan depan perusahaan akan membayarkan BPJS untukmu.",
+     "score": 5,
+     "critical": false,
+     "why": "Jumlah THR dan waktu serta penanggung pembayaran BPJS tepat."
+    },
+    {
+     "id": "h07",
+     "set": "dev",
+     "rep": 1,
+     "ms": 929,
+     "out": "THR dibayarkan sebesar satu bulan gaji pokok, dan mulai bulan depan perusahaan akan membayarkan BPJS untukmu.",
+     "score": 5,
+     "critical": false,
+     "why": "Jumlah THR dan waktu serta penanggung pembayaran BPJS tepat."
+    },
+    {
+     "id": "h07",
+     "set": "dev",
+     "rep": 2,
+     "ms": 986,
+     "out": "THR dibayarkan sebesar satu bulan gaji pokok, dan mulai bulan depan perusahaan akan membayarkan BPJS untukmu.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta, jumlah, dan waktu diterjemahkan dengan tepat."
+    },
+    {
+     "id": "h08",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1400,
+     "out": "Adi, bilang ke Rina, malam ini lembur sampai pukul sebelas. Uang lemburnya dihitung per jam.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta tepat: Adi memberi tahu Rina, lembur hingga pukul sebelas malam, dibayar per jam."
+    },
+    {
+     "id": "h08",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1262,
+     "out": "Adi, bilang ke Rina, malam ini lembur sampai pukul sebelas. Upah lemburnya dihitung per jam.",
+     "score": 5,
+     "critical": false,
+     "why": "Nama, waktu lembur, dan upah per jam tersampaikan dengan tepat."
+    },
+    {
+     "id": "h08",
+     "set": "dev",
+     "rep": 2,
+     "ms": 968,
+     "out": "Adi, bilang ke Rina, malam ini lembur sampai pukul sebelas. Upah lemburnya dihitung per jam.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua nama, waktu lembur, dan perhitungan upah per jam tersampaikan dengan tepat."
+    },
+    {
+     "id": "h09",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1513,
+     "out": "Saat membangun akun baru, jangan buru-buru jualan live. Tegaskan dulu personanya.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua pesan utama tersampaikan dengan tepat dan alami."
+    },
+    {
+     "id": "h09",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1165,
+     "out": "Saat membangun akun baru, jangan buru-buru jualan live. Bentuk dulu personanya.",
+     "score": 5,
+     "critical": false,
+     "why": "Tahap membangun akun, larangan buru-buru jualan, dan prioritas membangun persona tersampaikan."
+    },
+    {
+     "id": "h09",
+     "set": "dev",
+     "rep": 2,
+     "ms": 932,
+     "out": "Saat membangun akun baru, jangan buru-buru jualan live. Tegaskan dulu personanya.",
+     "score": 4,
+     "critical": false,
+     "why": "“Tegaskan persona” sedikit kurang tepat daripada “bangun persona”; makna utama tetap tersampaikan."
+    },
+    {
+     "id": "h10",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1552,
+     "out": "Wawancara tanggal 3 pukul 14.30 di ruang rapat lantai dua kantor. Bawa KTP dan ijazah.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua waktu, lokasi, dan dokumen yang harus dibawa diterjemahkan dengan tepat."
+    },
+    {
+     "id": "h10",
+     "set": "dev",
+     "rep": 1,
+     "ms": 933,
+     "out": "Wawancara tanggal 3 pukul 14.30 di ruang rapat lantai dua kantor. Bawa KTP dan ijazah.",
+     "score": 5,
+     "critical": false,
+     "why": "Tanggal, waktu, lokasi, dan dokumen tersampaikan dengan tepat."
+    },
+    {
+     "id": "h10",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1127,
+     "out": "Wawancara tanggal 3 pukul 14.30 di ruang rapat lantai dua kantor. Bawa KTP dan ijazah.",
+     "score": 5,
+     "critical": false,
+     "why": "Tanggal, waktu, lokasi, dan dokumen yang harus dibawa semuanya tepat."
+    },
+    {
+     "id": "h11",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1310,
+     "out": "Kalau kamu terus begini, aku pecat kamu.",
+     "score": 5,
+     "critical": false,
+     "why": "Ancaman pemecatan tetap tegas, langsung, dan akurat."
+    },
+    {
+     "id": "h11",
+     "set": "dev",
+     "rep": 1,
+     "ms": 890,
+     "out": "Kalau kamu terus begini, aku pecat kamu.",
+     "score": 5,
+     "critical": false,
+     "why": "Ancaman pemecatan disampaikan secara langsung dan tegas."
+    },
+    {
+     "id": "h11",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1466,
+     "out": "Kalau kamu terus begini, aku pecat kamu.",
+     "score": 5,
+     "critical": false,
+     "why": "Ancaman pemecatan langsung dan nada keras tersampaikan dengan tepat."
+    },
+    {
+     "id": "h12",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1107,
+     "out": "Tingkat retur barang batch ini 12,5%, naik 3 poin dibanding bulan lalu.",
+     "score": 5,
+     "critical": false,
+     "why": "Angka dan perbandingan dengan bulan lalu tersampaikan dengan tepat."
+    },
+    {
+     "id": "h12",
+     "set": "dev",
+     "rep": 1,
+     "ms": 988,
+     "out": "Tingkat retur barang batch ini 12,5%, naik 3 poin dibanding bulan lalu.",
+     "score": 5,
+     "critical": false,
+     "why": "Angka dan perbandingan dengan bulan lalu tepat; terjemahan alami."
+    },
+    {
+     "id": "h12",
+     "set": "dev",
+     "rep": 2,
+     "ms": 971,
+     "out": "Tingkat retur barang batch ini 12,5%, naik 3 poin dibanding bulan lalu.",
+     "score": 5,
+     "critical": false,
+     "why": "Angka dan perbandingan akurat; terjemahan alami."
+    },
+    {
+     "id": "h13",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1505,
+     "out": "老板，我这个月的工资怎么少了75万印尼盾？我明明从来没迟到过。",
+     "score": 5,
+     "critical": false,
+     "why": "称呼、金额和从未迟到的事实均准确，语气自然。"
+    },
+    {
+     "id": "h13",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1289,
+     "out": "老板，我这个月的工资怎么少了75万印尼盾？我明明从来没迟到过。",
+     "score": 5,
+     "critical": false,
+     "why": "称呼、金额和从未迟到均准确，语气自然。"
+    },
+    {
+     "id": "h13",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1064,
+     "out": "老板，我这个月的工资怎么少了75万印尼盾？我明明从来没迟到过。",
+     "score": 5,
+     "critical": false,
+     "why": "称呼、金额及从未迟到均准确，语气自然。"
+    },
+    {
+     "id": "h14",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1294,
+     "out": "姐，我已经很累了，想这个月底辞职，手续怎么办？",
+     "score": 5,
+     "critical": false,
+     "why": "信息完整，表达自然。"
+    },
+    {
+     "id": "h14",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1244,
+     "out": "姐，我已经很累了，想这个月底辞职，手续怎么办？",
+     "score": 5,
+     "critical": false,
+     "why": "称呼、疲惫程度、月底辞职及询问手续均准确。"
+    },
+    {
+     "id": "h14",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1049,
+     "out": "姐，我已经很累了，想这个月底辞职，手续怎么办？",
+     "score": 5,
+     "critical": false,
+     "why": "称呼、疲惫程度、月底辞职意向和流程询问均准确。"
+    },
+    {
+     "id": "h15",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1500,
+     "out": "昨晚直播间观众很少，只有300来人，而且很多人只问运费。",
+     "score": 5,
+     "critical": false,
+     "why": "人数、时间和询问运费的情况均准确，表达自然。"
+    },
+    {
+     "id": "h15",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1179,
+     "out": "昨晚直播间观众很少，只有300来人，而且很多人只问运费。",
+     "score": 5,
+     "critical": false,
+     "why": "人数和只问运费的情况均准确，表达自然。"
+    },
+    {
+     "id": "h15",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1239,
+     "out": "昨晚直播间人很少，只有300来人，而且很多人只问运费。",
+     "score": 5,
+     "critical": false,
+     "why": "准确传达昨晚观众约300人，许多人只问运费。"
+    },
+    {
+     "id": "h16",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1438,
+     "out": "姐，黑色已经没货了，现在只有藏青色和酒红色有现货。",
+     "score": 5,
+     "critical": false,
+     "why": "黑色缺货及仅剩藏青、酒红现货均准确。"
+    },
+    {
+     "id": "h16",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1170,
+     "out": "姐，黑色已经没货了，现在只有藏青色和酒红色有现货。",
+     "score": 5,
+     "critical": false,
+     "why": "黑色缺货及仅剩藏青色、酒红色现货均准确。"
+    },
+    {
+     "id": "h16",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1321,
+     "out": "姐，黑色已经卖完了，现在只有藏青色和酒红色有现货。",
+     "score": 5,
+     "critical": false,
+     "why": "黑色售罄及仅剩藏青色、酒红色现货均准确。"
+    },
+    {
+     "id": "h17",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1372,
+     "out": "我周六不能加班，因为有家庭活动，可以改到周日吗？",
+     "score": 5,
+     "critical": false,
+     "why": "信息准确完整，表达自然。"
+    },
+    {
+     "id": "h17",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1033,
+     "out": "我周六不能加班，因为有家庭活动，可以改到周日吗？",
+     "score": 5,
+     "critical": false,
+     "why": "准确传达周六不能加班、家庭活动及改到周日的请求。"
+    },
+    {
+     "id": "h17",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1159,
+     "out": "我周六不能加班，因为有家庭活动，可以改到周日吗？",
+     "score": 5,
+     "critical": false,
+     "why": "准确传达周六无法加班的原因及改到周日的请求。"
+    },
+    {
+     "id": "h18",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1566,
+     "out": "我的提成是按GMV算，还是按扣除退货后的净营业额算？",
+     "score": 5,
+     "critical": false,
+     "why": "准确表达了提成按GMV或扣除退货后的净额计算的疑问。"
+    },
+    {
+     "id": "h18",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1936,
+     "out": "我的提成是按GMV算，还是按扣除退货后的净营业额算？",
+     "score": 5,
+     "critical": false,
+     "why": "准确表达了两种提成计算口径。"
+    },
+    {
+     "id": "h18",
+     "set": "dev",
+     "rep": 2,
+     "ms": 961,
+     "out": "我的提成是按GMV算，还是按扣除退货后的净营业额算？",
+     "score": 5,
+     "critical": false,
+     "why": "准确表达提成按GMV还是按扣除退货后的净营业额计算。"
+    },
+    {
+     "id": "h19",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1578,
+     "out": "总额是12亿印尼盾，但目前到账的只有4亿印尼盾。",
+     "score": 5,
+     "critical": false,
+     "why": "金额与到账情况均准确，表达自然。"
+    },
+    {
+     "id": "h19",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1270,
+     "out": "总额是12亿印尼盾，但目前到账的只有4亿印尼盾。",
+     "score": 5,
+     "critical": false,
+     "why": "金额准确，语义完整自然。"
+    },
+    {
+     "id": "h19",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1113,
+     "out": "总额是12亿印尼盾，但目前到账的只有4亿印尼盾。",
+     "score": 5,
+     "critical": false,
+     "why": "总额12亿、已到账4亿均准确，表达自然。"
+    },
+    {
+     "id": "h20",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1698,
+     "out": "Budi哥说合同还没经HRD签字，所以他周一还不能开始上班。",
+     "score": 5,
+     "critical": false,
+     "why": "姓名、合同签署状态及周一无法上班的因果关系均准确。"
+    },
+    {
+     "id": "h20",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1258,
+     "out": "Budi哥说合同还没经HRD签字，所以他周一还不能开始上班。",
+     "score": 5,
+     "critical": false,
+     "why": "人名、合同签署状态及周一不能上班的因果关系均准确。"
+    },
+    {
+     "id": "h20",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1046,
+     "out": "Budi哥说合同还没经HRD签字，所以他周一还不能开始上班。",
+     "score": 5,
+     "critical": false,
+     "why": "人物、签约状态和周一无法上班均准确。"
+    },
+    {
+     "id": "h21",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1499,
+     "out": "哈哈，好的老板，今晚我再通知您。",
+     "score": 5,
+     "critical": false,
+     "why": "语气自然，今晚再次通知老板的意思准确。"
+    },
+    {
+     "id": "h21",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1046,
+     "out": "哈哈，好的老板，今晚我再通知您。",
+     "score": 5,
+     "critical": false,
+     "why": "语气自然，笑声、称呼及今晚再次通知的意思均准确。"
+    },
+    {
+     "id": "h21",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1005,
+     "out": "哈哈，好的老板，今晚我再通知您。",
+     "score": 5,
+     "critical": false,
+     "why": "语气自然，关键信息准确完整。"
+    },
+    {
+     "id": "h22",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1300,
+     "out": "抱歉回复晚了，刚才手机没电关机了。",
+     "score": 5,
+     "critical": false,
+     "why": "准确传达回复晚及手机没电关机。"
+    },
+    {
+     "id": "h22",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1248,
+     "out": "不好意思，回复晚了，刚才手机没电关机了。",
+     "score": 5,
+     "critical": false,
+     "why": "准确传达回复晚和手机没电关机。"
+    },
+    {
+     "id": "h22",
+     "set": "dev",
+     "rep": 2,
+     "ms": 970,
+     "out": "不好意思，回复晚了，刚才手机没电关机了。",
+     "score": 5,
+     "critical": false,
+     "why": "准确传达回复晚了及手机没电关机的原因。"
+    },
+    {
+     "id": "h23",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1470,
+     "out": "是这样的老板，新主播Dewi还不懂怎么用OBS，昨天直播一直卡顿。",
+     "score": 5,
+     "critical": false,
+     "why": "信息完整准确，表达自然。"
+    },
+    {
+     "id": "h23",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1306,
+     "out": "是这样的，老板，新主播Dewi还不懂怎么用OBS，昨天直播一直卡顿。",
+     "score": 5,
+     "critical": false,
+     "why": "信息准确完整，表达自然。"
+    },
+    {
+     "id": "h23",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1073,
+     "out": "是这样的老板，新主播Dewi还不懂怎么用OBS，昨天直播一直卡顿。",
+     "score": 5,
+     "critical": false,
+     "why": "新主播、OBS使用情况和昨天直播持续卡顿均准确。"
+    },
+    {
+     "id": "h24",
+     "set": "dev",
+     "rep": 0,
+     "ms": 1573,
+     "out": "请不要扣我的工资，我不是故意不来上班的，我孩子住院了。",
+     "score": 5,
+     "critical": false,
+     "why": "语义完整，表达自然，关键事实准确。"
+    },
+    {
+     "id": "h24",
+     "set": "dev",
+     "rep": 1,
+     "ms": 1766,
+     "out": "请不要扣我的工资，我不是故意不来上班的，我孩子住院了。",
+     "score": 5,
+     "critical": false,
+     "why": "信息完整准确，语气自然。"
+    },
+    {
+     "id": "h24",
+     "set": "dev",
+     "rep": 2,
+     "ms": 1124,
+     "out": "请不要扣我的工资，我不是故意不来上班的，我孩子住院了。",
+     "score": 5,
+     "critical": false,
+     "why": "意思准确，语气自然，关键事实完整。"
+    },
+    {
+     "id": "o01",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1496,
+     "out": "Mulai Rabu depan, kita akan menerapkan sistem dua shift: shift siang pukul 9 sampai 17, dan shift malam pukul 17 sampai 1 dini hari.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua jadwal dan pembagian shift diterjemahkan dengan tepat."
+    },
+    {
+     "id": "o01",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 1215,
+     "out": "Mulai Rabu depan, kita akan menerapkan sistem dua shift: shift siang pukul 9 sampai 17, dan shift malam pukul 17 sampai 1 dini hari.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta dan waktu shift disampaikan dengan tepat."
+    },
+    {
+     "id": "o01",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 1033,
+     "out": "Mulai Rabu depan, kita akan menerapkan sistem dua shift: shift siang pukul 9 sampai 17, dan shift malam pukul 17 sampai 1 dini hari.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta dan jam shift tepat; terjemahan alami."
+    },
+    {
+     "id": "o02",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1501,
+     "out": "Bulan lalu total penjualan mencapai 360 juta Rupiah, setelah dikurangi refund sebesar 24 juta Rupiah.",
+     "score": 5,
+     "critical": false,
+     "why": "Jumlah penjualan dan potongan refund tepat; terjemahan alami."
+    },
+    {
+     "id": "o02",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 1019,
+     "out": "Bulan lalu total penjualan mencapai 360 juta Rupiah, setelah dikurangi refund sebesar 24 juta Rupiah.",
+     "score": 5,
+     "critical": false,
+     "why": "Jumlah penjualan dan potongan refund sesuai; terjemahan alami."
+    },
+    {
+     "id": "o02",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 1165,
+     "out": "Bulan lalu total penjualan mencapai 360 juta Rupiah, setelah dikurangi refund sebesar 24 juta Rupiah.",
+     "score": 5,
+     "critical": false,
+     "why": "Jumlah penjualan, periode, dan potongan refund tersampaikan dengan tepat."
+    },
+    {
+     "id": "o03",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1281,
+     "out": "Jangan cuma membaca naskah. Lebih banyak berinteraksi dengan penggemar, selingi dengan bagi-bagi hadiah dan flash sale.",
+     "score": 2,
+     "critical": false,
+     "why": "福袋误译为普通赠品活动，遗漏了具体促销形式。"
+    },
+    {
+     "id": "o03",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 1179,
+     "out": "Jangan cuma membaca naskah. Lebih banyak berinteraksi dengan penggemar, selingi dengan bagi-bagi hadiah dan flash sale.",
+     "score": 3,
+     "critical": false,
+     "why": "福袋 berarti lucky bag, bukan sekadar bagi-bagi hadiah; bagian lain akurat."
+    },
+    {
+     "id": "o03",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 1321,
+     "out": "Jangan cuma membaca naskah. Lebih banyak berinteraksi dengan penggemar, selingi dengan bagi-bagi hadiah dan promo kilat.",
+     "score": 2,
+     "critical": false,
+     "why": "福袋 menjadi bagi-bagi hadiah; konsep lucky bag tidak tersampaikan."
+    },
+    {
+     "id": "o04",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1502,
+     "out": "Masa percobaan tiga bulan. Setelah diangkat menjadi karyawan tetap, gaji pokok naik menjadi 6 juta Rupiah.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta tepat dan terjemahan alami."
+    },
+    {
+     "id": "o04",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 956,
+     "out": "Masa percobaan tiga bulan. Setelah diangkat menjadi karyawan tetap, gaji pokok naik menjadi 6 juta Rupiah.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta dan jumlah tepat; terjemahan alami."
+    },
+    {
+     "id": "o04",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 1054,
+     "out": "Masa percobaan tiga bulan. Setelah diangkat menjadi karyawan tetap, gaji pokok naik menjadi 6 juta Rupiah.",
+     "score": 5,
+     "critical": false,
+     "why": "Masa percobaan, status tetap, dan kenaikan gaji pokok diterjemahkan tepat."
+    },
+    {
+     "id": "o05",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1478,
+     "out": "Siapa pun yang membawa pulang sampel lagi harus mengganti rugi sesuai harga aslinya.",
+     "score": 5,
+     "critical": false,
+     "why": "Makna, kewajiban ganti rugi, harga asli, dan nada tegas tersampaikan."
+    },
+    {
+     "id": "o05",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 1009,
+     "out": "Siapa pun yang membawa pulang sampel lagi harus mengganti rugi sesuai harga aslinya.",
+     "score": 5,
+     "critical": false,
+     "why": "Semua fakta tepat; kewajiban mengganti rugi dan nada tegas tetap terjaga."
+    },
+    {
+     "id": "o05",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 986,
+     "out": "Siapa pun yang membawa pulang sampel lagi harus mengganti rugi sesuai harga aslinya.",
+     "score": 5,
+     "critical": false,
+     "why": "Makna, kewajiban mengganti rugi sesuai harga asli, dan nada tegas tersampaikan."
+    },
+    {
+     "id": "o06",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1236,
+     "out": "Live-nya kena pembatasan traffic, mungkin karena tadi kamu mengucapkan kata yang dilarang.",
+     "score": 4,
+     "critical": false,
+     "why": "Makna tepat; ‘pembatasan traffic’ sedikit kurang alami."
+    },
+    {
+     "id": "o06",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 939,
+     "out": "Live-nya kena pembatasan traffic, mungkin karena tadi kamu mengucapkan kata yang dilarang.",
+     "score": 5,
+     "critical": false,
+     "why": "Makna pembatasan jangkauan dan dugaan penyebabnya tersampaikan dengan tepat."
+    },
+    {
+     "id": "o06",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 879,
+     "out": "Live-nya kena pembatasan traffic, mungkin karena tadi kamu mengucapkan kata yang dilarang.",
+     "score": 5,
+     "critical": false,
+     "why": "Pembatasan jangkauan dan dugaan penyebabnya tersampaikan dengan akurat."
+    },
+    {
+     "id": "o07",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1895,
+     "out": "老板，我刚收到320万印尼盾的工资转账，剩下的什么时候到账？",
+     "score": 5,
+     "critical": false,
+     "why": "金额、工资到账情况和询问余款时间均准确。"
+    },
+    {
+     "id": "o07",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 1515,
+     "out": "老板，我刚收到320万印尼盾的工资转账，剩下的什么时候到账？",
+     "score": 5,
+     "critical": false,
+     "why": "金额、工资到账情况和询问剩余款项的意思均准确。"
+    },
+    {
+     "id": "o07",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 1059,
+     "out": "老板，我刚收到320万印尼盾的工资转账，剩下的什么时候到账？",
+     "score": 5,
+     "critical": false,
+     "why": "金额、工资到账情况和询问剩余工资何时到账均准确。"
+    },
+    {
+     "id": "o08",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1413,
+     "out": "Sari姐申请从12月15日起休三个月产假。",
+     "score": 5,
+     "critical": false,
+     "why": "姓名、产假时长和开始日期均准确。"
+    },
+    {
+     "id": "o08",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 1249,
+     "out": "Sari姐申请从12月15日起休三个月产假。",
+     "score": 5,
+     "critical": false,
+     "why": "人名、产假时长和开始日期均准确。"
+    },
+    {
+     "id": "o08",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 1125,
+     "out": "Sari姐申请从12月15日起休三个月产假。",
+     "score": 5,
+     "critical": false,
+     "why": "姓名、产假时长和开始日期均准确。"
+    },
+    {
+     "id": "o09",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1541,
+     "out": "二号直播间的环形灯坏了，我从昨天就已经跟行政报修了，但还没人来修。",
+     "score": 4,
+     "critical": false,
+     "why": "事实完整；“行政”与“管理员”略有差异，措辞稍显生硬。"
+    },
+    {
+     "id": "o09",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 1152,
+     "out": "二号直播间的环形灯坏了，我从昨天就已经跟行政报修了，但还没人来修。",
+     "score": 4,
+     "critical": false,
+     "why": "“行政”比“管理员”稍窄，其余事实准确。"
+    },
+    {
+     "id": "o09",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 1272,
+     "out": "二号直播间的环形灯坏了，我从昨天就已经跟行政报修了，但还没人来修。",
+     "score": 4,
+     "critical": false,
+     "why": "“行政”与“管理员”略有区别，其余信息准确。"
+    },
+    {
+     "id": "o10",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1895,
+     "out": "如果下单金额超过15万印尼盾，就能享受爪哇全岛免运费，麻烦主播一直提醒一下。",
+     "score": 5,
+     "critical": false,
+     "why": "金额、爪哇全境包邮及请主播反复提醒均准确。"
+    },
+    {
+     "id": "o10",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 1238,
+     "out": "如果下单金额超过15万印尼盾，就能享受爪哇全岛免运费，麻烦主播一直提醒一下。",
+     "score": 5,
+     "critical": false,
+     "why": "金额、包邮范围及请主播反复提醒均准确。"
+    },
+    {
+     "id": "o10",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 1105,
+     "out": "如果下单金额超过15万印尼盾，就能享受爪哇全岛免运费，麻烦主播一直提醒一下。",
+     "score": 5,
+     "critical": false,
+     "why": "金额、爪哇全境包邮及请主播反复提醒均准确。"
+    },
+    {
+     "id": "o11",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1363,
+     "out": "姐，不好意思，这周的销售报告还不能发给您，因为仓库的数据还不完整。",
+     "score": 5,
+     "critical": false,
+     "why": "称呼、歉意、报告状态及原因均准确。"
+    },
+    {
+     "id": "o11",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 1328,
+     "out": "姐，不好意思，这周的销售报告还不能发给您，因为仓库的数据还不完整。",
+     "score": 5,
+     "critical": false,
+     "why": "称呼、歉意、报告状态及原因均准确自然。"
+    },
+    {
+     "id": "o11",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 1020,
+     "out": "姐，不好意思，这周的销售报告还不能发给您，因为仓库的数据还不完整。",
+     "score": 5,
+     "critical": false,
+     "why": "准确自然，信息完整"
+    },
+    {
+     "id": "o12",
+     "set": "holdout",
+     "rep": 0,
+     "ms": 1378,
+     "out": "老板，先别扣我工资，我周日会补上，保证不再迟到。",
+     "score": 4,
+     "critical": false,
+     "why": "“周日会补上”略含糊，宜明确说“周日补班”。"
+    },
+    {
+     "id": "o12",
+     "set": "holdout",
+     "rep": 1,
+     "ms": 1033,
+     "out": "老板，先别扣我工资，我周日会补上，保证不再迟到。",
+     "score": 3,
+     "critical": false,
+     "why": "“周日会补上”未明确是补班，其余意思准确。"
+    },
+    {
+     "id": "o12",
+     "set": "holdout",
+     "rep": 2,
+     "ms": 1020,
+     "out": "老板，先别扣我工资，我周日会补上，保证不再迟到。",
+     "score": 3,
+     "critical": false,
+     "why": "“周日会补上”未明确补班，容易被理解为补钱。"
+    }
+   ]
+  }
+ }
+}
