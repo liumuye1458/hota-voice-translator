@@ -105,7 +105,7 @@ export default function SettingsPanel({ isOpen, onClose, settings, onUpdateSetti
                 <option key={m.id} value={m.id}>{m.label}</option>
               ))}
             </select>
-            <div className="settings-hint">Luna 不可用时自动降级到 GPT-5.4 mini。效果不满意可切回 GPT-4o。</div>
+            <div className="settings-hint">已内置直播/人事术语表和金额换算规则。Luna 不可用时自动降级到 GPT-5.4 mini。</div>
           </div>
 
           <div className="settings-section">
@@ -119,7 +119,7 @@ export default function SettingsPanel({ isOpen, onClose, settings, onUpdateSetti
                 <option key={m.id} value={m.id}>{m.label}</option>
               ))}
             </select>
-            <div className="settings-hint">语音合成：gpt-4o-mini-tts（2027-01-06 停服前会迁移）</div>
+            <div className="settings-hint">实时识别：按住时边说边识别，出问题会自动改用上传识别。语音合成：gpt-4o-mini-tts（2027-01-06 停服前会迁移）</div>
           </div>
 
           <div className="settings-section">

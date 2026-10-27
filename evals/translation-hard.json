@@ -1,0 +1,259 @@
+{
+ "version": "1.0",
+ "created": "2026-10-27",
+ "note": "PRD-003. dev = used to write src/config/domainPrompt.js; holdout = never used for prompt writing. facts = what a judge must find in the translation.",
+ "cases": [
+  {
+   "id": "h01",
+   "dir": "zh→id",
+   "text": "这个月小雅的GMV做到八千五百万印尼盾，提成按百分之三算，周五前打到她卡上。",
+   "facts": "85.000.000 Rupiah (85 juta); komisi 3%; ditransfer sebelum Jumat; nama Xiaoya/Xiao Ya",
+   "set": "dev"
+  },
+  {
+   "id": "h02",
+   "dir": "zh→id",
+   "text": "嗯那个就是，明天早班改成十点开播，迟到一次扣五十万。",
+   "facts": "filler dropped; besok shift pagi mulai live jam 10; terlambat sekali potong 500.000 Rupiah (500 ribu)",
+   "set": "dev"
+  },
+  {
+   "id": "h03",
+   "dir": "zh→id",
+   "text": "你这场场观才两千，转化率不到百分之一，憋单憋太久了，观众都跑了。",
+   "facts": "jumlah penonton/viewers 2.000; conversion rate <1%; menahan order/hold terlalu lama (憋单); penonton pergi. Tone critical, not softened",
+   "set": "dev"
+  },
+  {
+   "id": "h04",
+   "dir": "zh→id",
+   "text": "投流预算这周先砍一半，坑位费谈不下来的品牌就别接了。",
+   "facts": "budget iklan berbayar/ads (投流) dipotong setengah minggu ini; slot fee/biaya slot (坑位费); brand yang tidak bisa dinegosiasi jangan diterima",
+   "set": "dev"
+  },
+  {
+   "id": "h05",
+   "dir": "zh→id",
+   "text": "我不是说你做得不好，我是说你不能再这样随便请假了。",
+   "facts": "negation structure preserved: bukan bilang kerjamu jelek, tapi tidak boleh lagi izin sembarangan",
+   "set": "dev"
+  },
+  {
+   "id": "h06",
+   "dir": "zh→id",
+   "text": "一点二亿",
+   "facts": "120.000.000 (120 juta), NOT 1,2 miliar, NOT 12 juta",
+   "set": "dev"
+  },
+  {
+   "id": "h07",
+   "dir": "zh→id",
+   "text": "THR按一个月底薪发，BPJS从下个月开始公司帮你交。",
+   "facts": "THR = 1 bulan gaji pokok; BPJS dibayar perusahaan mulai bulan depan",
+   "set": "dev"
+  },
+  {
+   "id": "h08",
+   "dir": "zh→id",
+   "text": "阿迪，你去跟Rina说，今晚加班到十一点，加班费按小时算。",
+   "facts": "names Adi and Rina kept; lembur sampai jam 11 malam; uang lembur per jam",
+   "set": "dev"
+  },
+  {
+   "id": "h09",
+   "dir": "zh→id",
+   "text": "起号阶段别急着带货，先把人设立住。",
+   "facts": "tahap membangun akun baru (起号); jangan buru-buru jualan; bangun persona dulu",
+   "set": "dev"
+  },
+  {
+   "id": "h10",
+   "dir": "zh→id",
+   "text": "三号下午两点半，在公司二楼会议室面试，带上身份证和学历证明。",
+   "facts": "tanggal 3, jam 14.30/setengah tiga sore; ruang rapat lantai 2; bawa KTP dan ijazah",
+   "set": "dev"
+  },
+  {
+   "id": "h11",
+   "dir": "zh→id",
+   "text": "你再这样我就直接开除你。",
+   "facts": "direct threat of dismissal kept harsh: pecat; not softened",
+   "set": "dev"
+  },
+  {
+   "id": "h12",
+   "dir": "zh→id",
+   "text": "这批货的退货率是百分之十二点五，比上个月高了三个点。",
+   "facts": "return rate 12,5%; 3 poin persentase lebih tinggi dari bulan lalu",
+   "set": "dev"
+  },
+  {
+   "id": "h13",
+   "dir": "id→zh",
+   "text": "Pak, gaji saya bulan ini kok kurang 750 ribu ya? Padahal saya gak pernah telat.",
+   "facts": "Pak → 老板/领导 (not 先生 ideally); 工资少了75万印尼盾 (750,000); 我从来没迟到过",
+   "set": "dev"
+  },
+  {
+   "id": "h14",
+   "dir": "id→zh",
+   "text": "Bu, aku udah capek banget, mau resign aja akhir bulan ini, gimana prosedurnya?",
+   "facts": "Bu → 姐/老板娘/领导; 很累; 想月底辞职; 问流程",
+   "set": "dev"
+  },
+  {
+   "id": "h15",
+   "dir": "id→zh",
+   "text": "Live tadi malam viewers-nya sepi, cuma 300an, terus banyak yang nanya ongkir doang.",
+   "facts": "昨晚直播人少，只有300来个观众；很多人只问运费",
+   "set": "dev"
+  },
+  {
+   "id": "h16",
+   "dir": "id→zh",
+   "text": "Kak, stok yang warna hitam udah habis, yang ready tinggal navy sama maroon.",
+   "facts": "黑色缺货/卖完；现货只剩藏青/海军蓝和酒红/栗色",
+   "set": "dev"
+  },
+  {
+   "id": "h17",
+   "dir": "id→zh",
+   "text": "Saya gak bisa lembur hari Sabtu soalnya ada acara keluarga, bisa ganti Minggu gak?",
+   "facts": "周六不能加班，有家庭活动；能不能换到周日",
+   "set": "dev"
+  },
+  {
+   "id": "h18",
+   "dir": "id→zh",
+   "text": "Komisi saya dihitung dari GMV atau dari omzet bersih setelah retur?",
+   "facts": "提成按GMV算还是按扣除退货后的净销售额算",
+   "set": "dev"
+  },
+  {
+   "id": "h19",
+   "dir": "id→zh",
+   "text": "Totalnya satu koma dua miliar, tapi yang udah cair baru empat ratus juta.",
+   "facts": "总额12亿印尼盾 (1.2 billion = 12亿); 已到账/已发放4亿 (400 juta = 4亿)",
+   "set": "dev"
+  },
+  {
+   "id": "h20",
+   "dir": "id→zh",
+   "text": "Mas Budi bilang kontraknya belum ditandatangani HRD, jadi dia belum bisa mulai Senin.",
+   "facts": "Budi; 合同还没被HR签; 所以他周一还不能开始上班",
+   "set": "dev"
+  },
+  {
+   "id": "h21",
+   "dir": "id→zh",
+   "text": "wkwk iya bos siap, nanti malam saya kabarin lagi",
+   "facts": "(笑) 好的老板 收到; 今晚再跟您汇报/通知",
+   "set": "dev"
+  },
+  {
+   "id": "h22",
+   "dir": "id→zh",
+   "text": "Maaf telat bales, tadi HP saya lowbat terus mati.",
+   "facts": "抱歉回复晚了；手机没电关机了",
+   "set": "dev"
+  },
+  {
+   "id": "h23",
+   "dir": "id→zh",
+   "text": "Jadi gini Pak, yang host baru itu, eh, si Dewi, dia belum paham cara pakai OBS, kemarin live-nya ngelag terus.",
+   "facts": "filler dropped; 新主播Dewi还不会用OBS；昨天直播一直卡",
+   "set": "dev"
+  },
+  {
+   "id": "h24",
+   "dir": "id→zh",
+   "text": "Tolong jangan potong gaji saya, saya bukan sengaja gak masuk, anak saya masuk rumah sakit.",
+   "facts": "请别扣我工资；我不是故意不来；孩子住院了",
+   "set": "dev"
+  },
+  {
+   "id": "o01",
+   "dir": "zh→id",
+   "text": "下周三开始实行两班倒，白班九点到五点，晚班五点到凌晨一点。",
+   "facts": "mulai Rabu depan sistem 2 shift; shift siang 09.00-17.00; shift malam 17.00-01.00 dini hari",
+   "set": "holdout"
+  },
+  {
+   "id": "o02",
+   "dir": "zh→id",
+   "text": "上个月总共卖了三点六亿，退款扣掉两千四百万。",
+   "facts": "total penjualan 360 juta Rupiah (3,6亿=360.000.000); refund dipotong 24 juta",
+   "set": "holdout"
+  },
+  {
+   "id": "o03",
+   "dir": "zh→id",
+   "text": "你别光念稿子，要多跟粉丝互动，把福袋和秒杀穿插着放。",
+   "facts": "jangan cuma baca naskah; lebih banyak interaksi dengan follower/penonton; selingi lucky bag/福袋 dan flash sale/秒杀",
+   "set": "holdout"
+  },
+  {
+   "id": "o04",
+   "dir": "zh→id",
+   "text": "试用期三个月，转正以后底薪涨到六百万。",
+   "facts": "masa percobaan 3 bulan; setelah jadi karyawan tetap gaji pokok naik jadi 6 juta Rupiah (600万=6.000.000)",
+   "set": "holdout"
+  },
+  {
+   "id": "o05",
+   "dir": "zh→id",
+   "text": "谁再把样品带回家，一律按原价赔。",
+   "facts": "siapa pun yang membawa pulang sampel lagi wajib ganti rugi harga asli; harsh tone kept",
+   "set": "holdout"
+  },
+  {
+   "id": "o06",
+   "dir": "zh→id",
+   "text": "直播间被限流了，可能是你刚才说了违禁词。",
+   "facts": "live room dibatasi jangkauannya/kena limit (限流); mungkin karena tadi kamu mengucapkan kata terlarang",
+   "set": "holdout"
+  },
+  {
+   "id": "o07",
+   "dir": "id→zh",
+   "text": "Bos, transferan gaji saya baru masuk 3,2 juta, sisanya kapan ya?",
+   "facts": "老板; 工资只到账320万印尼盾 (3.2 juta = 320万); 剩下的什么时候发",
+   "set": "holdout"
+  },
+  {
+   "id": "o08",
+   "dir": "id→zh",
+   "text": "Mbak Sari minta cuti melahirkan tiga bulan mulai tanggal 15 Desember.",
+   "facts": "Sari; 申请产假三个月; 从12月15日开始",
+   "set": "holdout"
+  },
+  {
+   "id": "o09",
+   "dir": "id→zh",
+   "text": "Ring light di studio dua rusak, saya udah lapor ke admin dari kemarin tapi belum ada yang benerin.",
+   "facts": "2号直播间的补光灯/环形灯坏了; 昨天就报给管理员了; 还没人修",
+   "set": "holdout"
+  },
+  {
+   "id": "o10",
+   "dir": "id→zh",
+   "text": "Kalau checkout di atas 150 ribu dapat gratis ongkir se-Jawa, tolong host sebutin terus ya.",
+   "facts": "下单满15万印尼盾 (150 ribu = 15万) 爪哇全境包邮; 请主播一直提醒/反复说",
+   "set": "holdout"
+  },
+  {
+   "id": "o11",
+   "dir": "id→zh",
+   "text": "Ibu, mohon maaf, laporan penjualan minggu ini belum bisa saya kirim karena data dari gudang belum lengkap.",
+   "facts": "Ibu → 姐/老板 (not 女士); 抱歉; 本周销售报告还不能发; 因为仓库数据不全",
+   "set": "holdout"
+  },
+  {
+   "id": "o12",
+   "dir": "id→zh",
+   "text": "Jangan dipotong dulu Pak, saya bakal ganti hari Minggu, janji gak telat lagi.",
+   "facts": "老板先别扣(钱); 我周日补班; 保证不再迟到",
+   "set": "holdout"
+  }
+ ]
+}

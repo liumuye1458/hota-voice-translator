@@ -14,15 +14,32 @@ import { sessionManager } from '../core/sessionManager.js'
 import { audioEngine } from '../core/audioEngine.js'
 import { split as splitChunks } from '../core/sentenceChunker.js'
 import { detectTextDirection } from '../core/textDirection.js'
-import { translateText, transcribeAudio } from '../services/openai.js'
+import { ChunkFeed } from '../core/chunkFeed.js'
+import {
+  RealtimeTranscriber,
+  SecretCache,
+  createWorkletCapture,
+  transcriptionSessionConfig,
+  warmCapture
+} from '../core/realtimeStt.js'
+import { translateText, translateTextStream, transcribeAudio, mintRealtimeClientSecret } from '../services/openai.js'
 import { OpenAIStandardTTS } from '../core/ttsProvider.js'
+import { buildSttPrompt } from '../config/domainPrompt.js'
 import {
   TranslationModelRouter,
   runWithModelRouting,
   classifyError,
   DEFAULT_TRANSLATION_MODEL,
-  DEFAULT_STT_MODEL
+  DEFAULT_STT_MODEL,
+  REALTIME_STT_MODEL,
+  UPLOAD_STT_FALLBACK
 } from '../core/modelRouter.js'
+
+// Ephemeral Realtime secrets, shared by the whole page (ADR-005)
+const secretCache = new SecretCache(mintRealtimeClientSecret)
+const PREWARM_INTERVAL_MS = 5 * 60 * 1000
+
+const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
 
 // Language-name resolver. Used to build the prompt.
 // Imports from config; if unavailable, fall back to literal codes.
@@ -81,10 +98,13 @@ export function useTranslator(opts) {
   }, [])
 
   // Translate under the routing policy and record which model actually answered.
-  const translateRouted = useCallback(async (session, text, sourceLangName, targetLangName, signal) => {
+  // With onChunk the translation streams (first sentence early, PRD-003 §3.1).
+  const translateRouted = useCallback(async (session, text, sourceLangName, targetLangName, signal, onChunk) => {
     const { result, model } = await runWithModelRouting(
       routerRef.current,
-      (m) => translateText(text, sourceLangName, targetLangName, apiKey, customInstructions, signal, m),
+      (m) => onChunk
+        ? translateTextStream(text, sourceLangName, targetLangName, apiKey, customInstructions, signal, m, onChunk)
+        : translateText(text, sourceLangName, targetLangName, apiKey, customInstructions, signal, m),
       {
         onFallback: (ev) => {
           session.metrics.fallback_triggered = true
@@ -96,6 +116,142 @@ export function useTranslator(opts) {
     session.metrics.model_translation = model
     return result
   }, [apiKey, customInstructions])
+
+  // ====================================================================
+  // playChunks — drive audioEngine and dispatch its events
+  // ====================================================================
+  const playChunks = useCallback(async (session, chunks) => {
+    const provider = new OpenAIStandardTTS({ apiKey })
+    session.metrics.tts_provider = provider.name
+    session.metrics.tts_failed_chunks = 0
+
+    await audioEngine.play(
+      session,
+      chunks,
+      voice,
+      provider,
+      (eventType, payload) => {
+        // Forward audio events to FSM
+        dispatch({ type: eventType, ...payload })
+        if (eventType === 'CHUNK_PLAYING' && session.metrics.t_first_audio == null) {
+          session.metrics.t_first_audio = nowMs()
+        }
+        if (eventType === 'CHUNK_FAILED') {
+          session.metrics.tts_failed_chunks += 1
+        }
+        if (eventType === 'SPEAK_DONE') {
+          session.metrics.tts_chunks = Array.isArray(chunks) ? chunks.length : chunks.total
+          logTurn(session, session.metrics.tts_failed_chunks ? 'ok-with-tts-failures' : 'ok')
+          sessionManager.dispose(session)
+        }
+      }
+    )
+  }, [apiKey, voice])
+
+  // ====================================================================
+  // Translate (streaming) and speak as soon as the first sentence is ready.
+  // Shared by voice and Chinese text input. PRD-003 §3.1.
+  // ====================================================================
+  const translateAndSpeak = useCallback(async (session, sourceText, { fromLang, toLang }) => {
+    const { attemptId: translateAttemptId, signal } = session.newTranslateAttempt()
+    const sourceLangName = getLangName(fromLang === 'zh' ? SOURCE_LANG.code : fromLang)
+    const targetLangName = getLangName(toLang === 'zh' ? SOURCE_LANG.code : toLang)
+    const tStart = nowMs()
+
+    const feed = new ChunkFeed()
+    let playing = null
+    const onChunk = (text) => {
+      if (!sessionManager.isCurrent(session)) return
+      // Keep the TTS input-size guard (speech API max 4096 chars)
+      for (const piece of splitChunks(text)) feed.push(piece)
+      if (playing) return
+      session.metrics.mt_first_ms = Math.round(nowMs() - tStart)
+      dispatch({
+        type: 'TRANSLATION_READY',
+        sessionId: session.id,
+        translateAttemptId,
+        text,
+        chunkCount: null
+      })
+      playing = playChunks(session, feed)
+    }
+
+    let translation
+    try {
+      translation = await translateRouted(session, sourceText, sourceLangName, targetLangName, signal, onChunk)
+    } catch (err) {
+      feed.end()
+      if (signal.aborted || session.cancelled) return
+      session.recordError({ code: 'translate-failed', msg: err?.message })
+      onError?.('翻译出错：' + userMessage(err))
+      if (playing) {
+        // Part of the translation is already being spoken; let it finish.
+        logTurn(session, 'translate-failed-partial', err)
+        await playing
+        return
+      }
+      logTurn(session, 'translate-failed', err)
+      dispatch({
+        type: 'ERROR',
+        sessionId: session.id,
+        attemptId: translateAttemptId,
+        code: 'translate-failed',
+        message: err?.message || 'translation failed'
+      })
+      return
+    }
+    feed.end()
+    if (!sessionManager.isCurrent(session)) return
+    session.metrics.mt_ms = Math.round(nowMs() - tStart)
+
+    if (!translation || !playing) {
+      // Nothing to say (empty model output)
+      dispatch({ type: 'EMPTY_INPUT', sessionId: session.id })
+      logTurn(session, 'empty-translation')
+      sessionManager.dispose(session)
+      return
+    }
+
+    // Notify host about completed translation (for message history)
+    onTranslationDone?.({
+      originalText: sourceText,
+      translatedText: translation,
+      direction: session.direction,
+      fromLang,
+      toLang
+    })
+
+    await playing
+  }, [translateRouted, playChunks, onTranslationDone, onError])
+
+  // ====================================================================
+  // Realtime STT config + prewarm (ADR-005)
+  // ====================================================================
+  const sttLangOf = useCallback((direction) => (
+    direction === 'zh→id' ? 'zh' : isoFromTargetLangCode(targetLangCode)
+  ), [targetLangCode])
+
+  const realtimeConfigFor = useCallback((direction) => {
+    const language = sttLangOf(direction)
+    return transcriptionSessionConfig({
+      model: REALTIME_STT_MODEL,
+      language,
+      prompt: buildSttPrompt(language, sttPrompt)
+    })
+  }, [sttLangOf, sttPrompt])
+
+  // Keep a fresh secret for both buttons so a press doesn't wait for minting.
+  // Debounced: the key / vocabulary fields change on every keystroke.
+  useEffect(() => {
+    if (!apiKey || sttModel !== 'realtime') return
+    const warm = () => {
+      secretCache.prewarm(apiKey, realtimeConfigFor('zh→id'))
+      secretCache.prewarm(apiKey, realtimeConfigFor('id→zh'))
+    }
+    const first = setTimeout(warm, 1500)
+    const t = setInterval(warm, PREWARM_INTERVAL_MS)
+    return () => { clearTimeout(first); clearInterval(t) }
+  }, [apiKey, sttModel, realtimeConfigFor])
 
   // MediaRecorder state (kept here to allow cleanup from forceReset)
   const recorderStateRef = useRef({
@@ -199,7 +355,12 @@ export function useTranslator(opts) {
     dispatch({ type: 'START', session, inputMode: 'text', sessionId: session.id })
     startMetrics(session, { input: 'text', model_stt: null })
 
-    // Translate
+    if (!toChinese) {
+      await translateAndSpeak(session, cleaned, { fromLang: 'zh', toLang: targetLangCode })
+      return
+    }
+
+    // Foreign text → Chinese: translate and show only (no speech)
     const { attemptId: translateAttemptId, signal: tlSignal } = session.newTranslateAttempt()
     const sourceLangName = getLangName(toChinese ? targetLangCode : SOURCE_LANG.code)
     const targetLangName = getLangName(toChinese ? SOURCE_LANG.code : targetLangCode)
@@ -223,42 +384,17 @@ export function useTranslator(opts) {
     }
     if (!translation || !sessionManager.isCurrent(session)) return
 
-    if (toChinese) {
-      onTranslationDone?.({
-        originalText: cleaned,
-        translatedText: translation,
-        direction,
-        fromLang: targetLangCode,
-        toLang: 'zh'
-      })
-      dispatch({ type: 'TEXT_DONE', sessionId: session.id, translateAttemptId })
-      logTurn(session, 'ok-silent')
-      sessionManager.dispose(session)
-      return
-    }
-
-    // Chunk + dispatch TRANSLATION_READY
-    const chunks = splitChunks(translation)
-    dispatch({
-      type: 'TRANSLATION_READY',
-      sessionId: session.id,
-      translateAttemptId,
-      text: translation,
-      chunkCount: chunks.length
-    })
-
-    // Notify host about completed translation (for message history)
     onTranslationDone?.({
       originalText: cleaned,
       translatedText: translation,
-      direction: session.direction,
-      fromLang: 'zh',
-      toLang: targetLangCode
+      direction,
+      fromLang: targetLangCode,
+      toLang: 'zh'
     })
-
-    // Play
-    await playChunks(session, chunks)
-  }, [apiKey, targetLangCode, voice, translateRouted, onTranslationDone, onError])
+    dispatch({ type: 'TEXT_DONE', sessionId: session.id, translateAttemptId })
+    logTurn(session, 'ok-silent')
+    sessionManager.dispose(session)
+  }, [apiKey, targetLangCode, translateRouted, translateAndSpeak, onTranslationDone, onError])
 
   // ====================================================================
   // VOICE mode — right side (target lang → Chinese) via MediaRecorder
@@ -268,6 +404,8 @@ export function useTranslator(opts) {
       onError?.('请设置 API Key / Set API Key')
       return
     }
+    // Still inside the press gesture: create/resume the capture AudioContext now
+    if (sttModel === 'realtime') warmCapture()
     const direction = side === 'left' ? 'zh→id' : 'id→zh'
     const session = sessionManager.create({ direction, inputMode: 'voice' })
 
@@ -327,7 +465,19 @@ export function useTranslator(opts) {
       session.cancel('start-failed')
       return
     }
-  }, [apiKey, sttModel, onError])
+
+    // Realtime STT alongside the recorder; the recording stays as fallback (ADR-005)
+    if (sttModel === 'realtime') {
+      const config = realtimeConfigFor(direction)
+      const transcriber = new RealtimeTranscriber({
+        getSecret: () => secretCache.get(apiKey, config),
+        createCapture: createWorkletCapture
+      })
+      session.realtimeStt = transcriber
+      session.addCleanup(() => transcriber.close())
+      transcriber.start(stream)
+    }
+  }, [apiKey, sttModel, realtimeConfigFor, onError])
 
   // ====================================================================
   // Stop voice — process recorded audio
@@ -339,6 +489,10 @@ export function useTranslator(opts) {
 
     const rs = recorderStateRef.current
     if (!rs.recorder) return
+
+    session.metrics.t_release = nowMs()
+    // Realtime: stop capture + commit right away, in parallel with the recorder stop
+    const realtime = session.realtimeStt ? session.realtimeStt.finish() : null
 
     // Stop recording and await final dataavailable
     await new Promise(resolve => {
@@ -370,20 +524,41 @@ export function useTranslator(opts) {
 
     dispatch({ type: 'STOP', sessionId: session.id, nextPhase: 'transcribing' })
 
-    // Transcribe
+    // Transcribe: realtime result if it worked, else upload the recording (ADR-005)
     const { attemptId: trAttemptId, signal: trSignal } = session.newTranscribeAttempt()
-    const sttLang = session.direction === 'zh→id' ? 'zh' : isoFromTargetLangCode(targetLangCode)
-    let transcript
+    const sttLang = sttLangOf(session.direction)
+    let transcript = null
+    if (realtime) {
+      const r = await realtime
+      if (session.cancelled) return
+      if (r.ok) {
+        transcript = r.text
+        session.metrics.stt_path = 'realtime'
+        session.metrics.model_stt = REALTIME_STT_MODEL
+      } else {
+        session.metrics.stt_path = 'upload-fallback'
+        session.metrics.fallback_reason = r.reason
+        console.info('realtime_stt_fallback', { sessionId: session.id, reason: r.reason })
+      }
+      const tm = session.realtimeStt.timings
+      if (tm.open != null) session.metrics.rt_connect_ms = Math.round(tm.open - tm.start)
+    }
     try {
-      transcript = await transcribeAudio(
-        audioBlob,
-        rs.mimeType,
-        sttLang,
-        sttPrompt,
-        apiKey,
-        trSignal,
-        sttModel
-      )
+      if (transcript == null) {
+        const uploadModel = sttModel === 'realtime' ? UPLOAD_STT_FALLBACK : sttModel
+        session.metrics.stt_path ??= 'upload'
+        session.metrics.model_stt = uploadModel
+        transcript = await transcribeAudio(
+          audioBlob,
+          rs.mimeType,
+          sttLang,
+          buildSttPrompt(sttLang, sttPrompt),
+          apiKey,
+          trSignal,
+          uploadModel
+        )
+      }
+      session.metrics.stt_ms = Math.round(nowMs() - session.metrics.t_release)
     } catch (err) {
       if (trSignal.aborted || session.cancelled) return
       session.recordError({ code: 'transcribe-failed', msg: err?.message })
@@ -412,55 +587,11 @@ export function useTranslator(opts) {
       text: transcript
     })
 
-    // Translate
-    const { attemptId: tlAttemptId, signal: tlSignal } = session.newTranslateAttempt()
-    const targetLangName = session.direction === 'zh→id'
-      ? getLangName(targetLangCode)
-      : getLangName(SOURCE_LANG.code)
-    const sourceLangName = session.direction === 'zh→id'
-      ? getLangName(SOURCE_LANG.code)
-      : getLangName(targetLangCode)
+    // Translate + speak (streaming)
     const fromLang = session.direction === 'zh→id' ? 'zh' : targetLangCode
     const toLang = session.direction === 'zh→id' ? targetLangCode : 'zh'
-
-    let translation
-    try {
-      translation = await translateRouted(session, transcript, sourceLangName, targetLangName, tlSignal)
-    } catch (err) {
-      if (tlSignal.aborted || session.cancelled) return
-      session.recordError({ code: 'translate-failed', msg: err?.message })
-      logTurn(session, 'translate-failed', err)
-      dispatch({
-        type: 'ERROR',
-        sessionId: session.id,
-        attemptId: tlAttemptId,
-        code: 'translate-failed',
-        message: err?.message
-      })
-      onError?.('翻译出错：' + userMessage(err))
-      return
-    }
-    if (!translation || !sessionManager.isCurrent(session)) return
-
-    const chunks = splitChunks(translation)
-    dispatch({
-      type: 'TRANSLATION_READY',
-      sessionId: session.id,
-      translateAttemptId: tlAttemptId,
-      text: translation,
-      chunkCount: chunks.length
-    })
-
-    onTranslationDone?.({
-      originalText: transcript,
-      translatedText: translation,
-      direction: session.direction,
-      fromLang,
-      toLang
-    })
-
-    await playChunks(session, chunks)
-  }, [state.session, apiKey, targetLangCode, sttPrompt, sttModel, voice, translateRouted, onTranslationDone, onError])
+    await translateAndSpeak(session, transcript, { fromLang, toLang })
+  }, [state.session, apiKey, targetLangCode, sttPrompt, sttModel, sttLangOf, translateAndSpeak, onError])
 
   // ====================================================================
   // Cancel voice — abort current recording without processing
@@ -520,34 +651,6 @@ export function useTranslator(opts) {
   // NOTE: playChunks is stable-ish via its own useCallback; not a dep here to
   // avoid re-creating replay on every audio setting change.
 
-  // ====================================================================
-  // playChunks — drive audioEngine and dispatch its events
-  // ====================================================================
-  const playChunks = useCallback(async (session, chunks) => {
-    const provider = new OpenAIStandardTTS({ apiKey })
-    session.metrics.tts_provider = provider.name
-    session.metrics.tts_chunks = chunks.length
-    session.metrics.tts_failed_chunks = 0
-
-    await audioEngine.play(
-      session,
-      chunks,
-      voice,
-      provider,
-      (eventType, payload) => {
-        // Forward audio events to FSM
-        dispatch({ type: eventType, ...payload })
-        if (eventType === 'CHUNK_FAILED') {
-          session.metrics.tts_failed_chunks += 1
-        }
-        if (eventType === 'SPEAK_DONE') {
-          logTurn(session, session.metrics.tts_failed_chunks ? 'ok-with-tts-failures' : 'ok')
-          sessionManager.dispose(session)
-        }
-      }
-    )
-  }, [apiKey, voice])
-
   return {
     state,
     sendText,
@@ -564,7 +667,7 @@ export function useTranslator(opts) {
 
 function startMetrics(session, { input, model_stt }) {
   session.metrics = {
-    t0: typeof performance !== 'undefined' ? performance.now() : Date.now(),
+    t0: nowMs(),
     input,
     direction: session.direction,
     model_stt,
@@ -574,17 +677,26 @@ function startMetrics(session, { input, model_stt }) {
 }
 
 // One structured line per turn: open DevTools → Console → filter "translator_turn".
+// first_audio_ms = release (voice) or send (text) → first chunk starts playing (PRD-003 §3.4).
 function logTurn(session, outcome, err) {
   const m = session.metrics || {}
-  const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+  const now = nowMs()
+  const origin = m.t_release ?? m.t0
   console.info('translator_turn', {
     sessionId: session.id,
     outcome,
     input: m.input,
     direction: m.direction,
     model_stt: m.model_stt,
+    stt_path: m.stt_path || null,
+    stt_ms: m.stt_ms ?? null,
+    rt_connect_ms: m.rt_connect_ms ?? null,
+    fallback_reason: m.fallback_reason || null,
     model_translation: m.model_translation,
     fallback_triggered: m.fallback_triggered,
+    mt_first_ms: m.mt_first_ms ?? null,
+    mt_ms: m.mt_ms ?? null,
+    first_audio_ms: m.t_first_audio != null && origin != null ? Math.round(m.t_first_audio - origin) : null,
     tts_provider: m.tts_provider || null,
     tts_chunks: m.tts_chunks ?? null,
     tts_failed_chunks: m.tts_failed_chunks ?? null,
